@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plane, Calendar, Wrench, Sparkles, FileText, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { getAircraft, getReservations, getServices, getTrainingCurrency, TrainingCurrency } from '@/lib/supabase-api';
+import { format } from 'date-fns';
+import { Plane, Calendar, Wrench, Award, AlertCircle, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Aircraft {
@@ -19,34 +20,72 @@ const OwnerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [aircraft, setAircraft] = useState<Aircraft[]>([]);
+  const [reservations, setReservations] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [trainingCurrency, setTrainingCurrency] = useState<TrainingCurrency | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
-      fetchAircraft();
+      fetchData();
     }
   }, [user]);
 
-  const fetchAircraft = async () => {
+  const fetchData = async () => {
     try {
-      const { data, error } = await supabase
-        .from('aircraft')
-        .select('*')
-        .eq('owner_id', user?.id);
-
-      if (error) throw error;
-      setAircraft(data || []);
+      const [aircraftData, reservationsData, servicesData, currencyData] = await Promise.all([
+        getAircraft(user!.id),
+        getReservations(user!.id),
+        getServices(user!.id),
+        getTrainingCurrency(user!.id),
+      ]);
+      setAircraft(aircraftData);
+      setReservations(reservationsData.filter(r => new Date(r.start_at) > new Date()));
+      setServices(servicesData.filter(s => s.status !== 'completed' && s.status !== 'canceled'));
+      setTrainingCurrency(currencyData);
     } catch (error) {
-      console.error('Error fetching aircraft:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const getTrainingBadge = () => {
+    if (!trainingCurrency) return null;
+    
+    const hasExpired = !trainingCurrency.ipc_current || !trainingCurrency.bfr_current;
+    const isDueSoon = trainingCurrency.ipc_due_soon || trainingCurrency.bfr_due_soon;
+    
+    if (hasExpired) {
+      return (
+        <Badge variant="destructive" className="flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          Expired
+        </Badge>
+      );
+    }
+    
+    if (isDueSoon) {
+      return (
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          Due Soon
+        </Badge>
+      );
+    }
+    
+    return (
+      <Badge variant="default" className="flex items-center gap-1">
+        <CheckCircle className="h-3 w-3" />
+        Current
+      </Badge>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-muted-foreground">Loading your aircraft...</div>
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
@@ -55,11 +94,10 @@ const OwnerDashboard = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Welcome Back</h1>
-        <p className="text-muted-foreground">Manage your aircraft and view upcoming flights</p>
+        <p className="text-muted-foreground">Manage your aircraft and view upcoming activities</p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Aircraft</CardTitle>
@@ -72,127 +110,58 @@ const OwnerDashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Next Flight</CardTitle>
+            <CardTitle className="text-sm font-medium">Upcoming Flights</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">No upcoming flights</p>
+            <div className="text-2xl font-bold">{reservations.length}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Maintenance</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Services</CardTitle>
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Items pending</p>
+            <div className="text-2xl font-bold">{services.length}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Invoices</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Training</CardTitle>
+            <Award className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$0</div>
+            {getTrainingBadge()}
           </CardContent>
         </Card>
       </div>
 
-      {/* Aircraft Cards */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Your Aircraft</h2>
-        </div>
-
-        {aircraft.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Plane className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-center">
-                No aircraft registered yet.<br />Contact Freedom Aviation to add your aircraft.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {aircraft.map((ac) => (
-              <Card key={ac.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-xl">{ac.tail_number}</CardTitle>
-                      <CardDescription>{ac.model}</CardDescription>
-                    </div>
-                    <Badge variant={ac.status === 'active' ? 'default' : 'secondary'}>
-                      {ac.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Plane className="h-4 w-4 mr-2" />
-                    Based at {ac.base_location}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate('/booking')}
-                      className="w-full"
-                    >
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Book Flight
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                    >
-                      <Wrench className="h-4 w-4 mr-2" />
-                      Maintenance
-                    </Button>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full"
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Request Detail
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks and requests</CardDescription>
+          <CardTitle>My Aircraft</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
-          <Button onClick={() => navigate('/booking')} variant="outline" className="justify-start">
-            <Calendar className="h-4 w-4 mr-2" />
-            Schedule Flight
-          </Button>
-          <Button onClick={() => navigate('/billing')} variant="outline" className="justify-start">
-            <FileText className="h-4 w-4 mr-2" />
-            View Invoices
-          </Button>
-          <Button variant="outline" className="justify-start">
-            <Clock className="h-4 w-4 mr-2" />
-            Flight History
-          </Button>
+        <CardContent>
+          {aircraft.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              No aircraft found. Contact admin to add your aircraft.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {aircraft.map((ac) => (
+                <div key={ac.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h3 className="font-semibold">{ac.tail_number}</h3>
+                    <p className="text-sm text-muted-foreground">{ac.model}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Base: {ac.base_location}</p>
+                  </div>
+                  <Badge>{ac.status}</Badge>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

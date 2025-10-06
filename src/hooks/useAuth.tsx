@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  userRole: 'owner' | 'admin' | null;
+  userRole: 'owner' | 'instructor' | 'admin' | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [userRole, setUserRole] = useState<'owner' | 'admin' | null>(null);
+  const [userRole, setUserRole] = useState<'owner' | 'instructor' | 'admin' | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (!error && data) {
-        setUserRole(data.role as 'owner' | 'admin');
+        setUserRole(data.role as 'owner' | 'instructor' | 'admin');
       }
     } catch (error) {
       console.error('Error fetching user role:', error);

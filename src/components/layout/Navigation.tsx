@@ -9,6 +9,8 @@ const Navigation = () => {
   const ownerLinks = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/booking', label: 'Bookings', icon: Calendar },
+    { to: '/services', label: 'Services', icon: Plane },
+    { to: '/training', label: 'Training', icon: Users },
     { to: '/billing', label: 'Billing', icon: FileText },
   ];
 
