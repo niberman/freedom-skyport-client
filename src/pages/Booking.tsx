@@ -1,175 +1,433 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useRoleCheck } from '@/hooks/useRoleCheck';
 import Header from '@/components/layout/Header';
 import Navigation from '@/components/layout/Navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, Clock, Plane } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import {
+  getReservations,
+  getAllReservations,
+  createReservation,
+  updateReservationStatus,
+  getAircraft,
+  getAllAircraft,
+  getInstructors,
+  Reservation,
+} from '@/lib/supabase-api';
+import { format } from 'date-fns';
+import { Calendar, Plane, User, Clock } from 'lucide-react';
 
 const Booking = () => {
   const { user } = useAuth();
+  const { isAdmin } = useRoleCheck();
   const { toast } = useToast();
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [aircraft, setAircraft] = useState<any[]>([]);
+  const [instructors, setInstructors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+
   const [formData, setFormData] = useState({
-    date: '',
-    time: '',
-    duration: '',
-    purpose: '',
+    aircraft_id: '',
+    instructor_id: '',
+    start_at: '',
+    end_at: '',
+    purpose: 'Personal',
     notes: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    toast({
-      title: "Booking Request Submitted",
-      description: "We'll review your request and confirm shortly.",
-    });
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
-    setFormData({
-      date: '',
-      time: '',
-      duration: '',
-      purpose: '',
-      notes: '',
-    });
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [reservationsData, aircraftData, instructorsData] = await Promise.all([
+        isAdmin ? getAllReservations() : getReservations(user!.id),
+        isAdmin ? getAllAircraft() : getAircraft(user!.id),
+        getInstructors(),
+      ]);
+      setReservations(reservationsData as Reservation[]);
+      setAircraft(aircraftData);
+      setInstructors(instructorsData);
+    } catch (error: any) {
+      toast({
+        title: 'Error loading bookings',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      await createReservation({
+        aircraft_id: formData.aircraft_id,
+        instructor_id: formData.instructor_id || undefined,
+        start_at: formData.start_at,
+        end_at: formData.end_at,
+        purpose: formData.purpose,
+        notes: formData.notes || undefined,
+      });
+
+      toast({
+        title: 'Booking created',
+        description: 'Your flight booking has been submitted successfully.',
+      });
+
+      setShowForm(false);
+      setFormData({
+        aircraft_id: '',
+        instructor_id: '',
+        start_at: '',
+        end_at: '',
+        purpose: 'Personal',
+        notes: '',
+      });
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleStatusUpdate = async (
+    id: string,
+    status: 'confirmed' | 'canceled'
+  ) => {
+    try {
+      await updateReservationStatus(id, status);
+      toast({
+        title: 'Booking updated',
+        description: `Booking has been ${status}.`,
+      });
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const getStatusBadge = (status: Reservation['status']) => {
+    const variants: Record<
+      Reservation['status'],
+      { variant: any; label: string }
+    > = {
+      requested: { variant: 'secondary', label: 'Requested' },
+      confirmed: { variant: 'default', label: 'Confirmed' },
+      completed: { variant: 'outline', label: 'Completed' },
+      canceled: { variant: 'destructive', label: 'Canceled' },
+    };
+
+    const { variant, label } = variants[status];
+    return <Badge variant={variant}>{label}</Badge>;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  const upcomingReservations = reservations.filter(
+    (r) =>
+      new Date(r.start_at) > new Date() &&
+      (r.status === 'confirmed' || r.status === 'requested')
+  );
+  const pastReservations = reservations.filter(
+    (r) =>
+      new Date(r.start_at) <= new Date() ||
+      r.status === 'completed' ||
+      r.status === 'canceled'
+  );
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <Navigation />
+
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Flight Booking</h1>
-            <p className="text-muted-foreground">Schedule your flight or training session</p>
+            <h1 className="text-4xl font-bold mb-2">
+              {isAdmin ? 'Flight Schedule' : 'My Bookings'}
+            </h1>
+            <p className="text-muted-foreground">
+              {isAdmin
+                ? 'Manage all flight reservations'
+                : 'Book and manage your flights'}
+            </p>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Booking Form */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>New Booking Request</CardTitle>
-                <CardDescription>
-                  Fill out the form below to request a flight reservation
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="date">Date</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                        required
-                      />
-                    </div>
+          {!isAdmin && (
+            <Button onClick={() => setShowForm(!showForm)}>
+              {showForm ? 'Cancel' : 'New Booking'}
+            </Button>
+          )}
+        </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="time">Time</Label>
-                      <Input
-                        id="time"
-                        type="time"
-                        value={formData.time}
-                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                        required
-                      />
-                    </div>
+        {showForm && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Book a Flight</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="aircraft">Aircraft *</Label>
+                    <Select
+                      value={formData.aircraft_id}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, aircraft_id: value })
+                      }
+                      required
+                    >
+                      <SelectTrigger id="aircraft">
+                        <SelectValue placeholder="Select aircraft" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {aircraft.map((ac) => (
+                          <SelectItem key={ac.id} value={ac.id}>
+                            {ac.tail_number} - {ac.model}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="duration">Duration (hours)</Label>
+                    <Label htmlFor="instructor">Instructor (Optional)</Label>
+                    <Select
+                      value={formData.instructor_id}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, instructor_id: value })
+                      }
+                    >
+                      <SelectTrigger id="instructor">
+                        <SelectValue placeholder="Select instructor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {instructors.map((inst) => (
+                          <SelectItem key={inst.id} value={inst.id}>
+                            {inst.profiles?.full_name || inst.profiles?.email}
+                            {inst.ratings?.length > 0 &&
+                              ` (${inst.ratings.join(', ')})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="start_at">Start Time *</Label>
                     <Input
-                      id="duration"
-                      type="number"
-                      step="0.5"
-                      min="0.5"
-                      value={formData.duration}
-                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                      placeholder="2.0"
+                      id="start_at"
+                      type="datetime-local"
+                      value={formData.start_at}
+                      onChange={(e) =>
+                        setFormData({ ...formData, start_at: e.target.value })
+                      }
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="purpose">Purpose</Label>
+                    <Label htmlFor="end_at">End Time *</Label>
                     <Input
-                      id="purpose"
-                      value={formData.purpose}
-                      onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
-                      placeholder="e.g., Personal flight, IPC training, etc."
+                      id="end_at"
+                      type="datetime-local"
+                      value={formData.end_at}
+                      onChange={(e) =>
+                        setFormData({ ...formData, end_at: e.target.value })
+                      }
                       required
                     />
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="notes">Additional Notes</Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      placeholder="Any special requirements or notes..."
-                      rows={4}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="purpose">Purpose</Label>
+                  <Select
+                    value={formData.purpose}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, purpose: value })
+                    }
+                  >
+                    <SelectTrigger id="purpose">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Personal">Personal</SelectItem>
+                      <SelectItem value="IPC">IPC</SelectItem>
+                      <SelectItem value="BFR">BFR</SelectItem>
+                      <SelectItem value="Training">Training</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <Button type="submit" className="w-full">
-                    Submit Booking Request
-                  </Button>
-                </form>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
+                    placeholder="Additional details..."
+                    rows={3}
+                  />
+                </div>
+
+                <Button type="submit" className="w-full">
+                  Book Flight
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="space-y-8">
+          {upcomingReservations.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Upcoming</h2>
+              <div className="space-y-4">
+                {upcomingReservations.map((reservation) => (
+                  <Card key={reservation.id}>
+                    <CardContent className="py-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg flex items-center gap-2">
+                              <Plane className="h-5 w-5" />
+                              {reservation.aircraft?.tail_number} -{' '}
+                              {reservation.aircraft?.model}
+                            </h3>
+                            {getStatusBadge(reservation.status)}
+                          </div>
+
+                          <div className="space-y-1 text-sm text-muted-foreground">
+                            <p className="flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              {format(new Date(reservation.start_at), 'PPpp')} -{' '}
+                              {format(new Date(reservation.end_at), 'p')}
+                            </p>
+
+                            {reservation.instructor && (
+                              <p className="flex items-center gap-2">
+                                <User className="h-4 w-4" />
+                                Instructor:{' '}
+                                {reservation.instructor.profiles?.full_name ||
+                                  reservation.instructor.profiles?.email}
+                              </p>
+                            )}
+
+                            <p>Purpose: {reservation.purpose}</p>
+
+                            {reservation.notes && (
+                              <p className="mt-2">{reservation.notes}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          {isAdmin && reservation.status === 'requested' && (
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                handleStatusUpdate(reservation.id, 'confirmed')
+                              }
+                            >
+                              Approve
+                            </Button>
+                          )}
+                          {(isAdmin ||
+                            reservation.status === 'requested') && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                handleStatusUpdate(reservation.id, 'canceled')
+                              }
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {pastReservations.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Past</h2>
+              <div className="space-y-4">
+                {pastReservations.map((reservation) => (
+                  <Card key={reservation.id} className="opacity-75">
+                    <CardContent className="py-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg">
+                              {reservation.aircraft?.tail_number} -{' '}
+                              {reservation.aircraft?.model}
+                            </h3>
+                            {getStatusBadge(reservation.status)}
+                          </div>
+
+                          <div className="space-y-1 text-sm text-muted-foreground">
+                            <p>
+                              {format(new Date(reservation.start_at), 'PPpp')}
+                            </p>
+                            <p>Purpose: {reservation.purpose}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {reservations.length === 0 && (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">No bookings found</p>
               </CardContent>
             </Card>
-
-            {/* Upcoming Flights Sidebar */}
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Upcoming Flights</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No upcoming flights</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Recent Flights</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No flight history</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Quick Info</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex items-start space-x-2">
-                    <Plane className="h-4 w-4 text-primary mt-0.5" />
-                    <p>Bookings are subject to aircraft availability</p>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <Clock className="h-4 w-4 text-primary mt-0.5" />
-                    <p>Please book at least 24 hours in advance</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          )}
         </div>
       </main>
     </div>
