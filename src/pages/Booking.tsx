@@ -221,16 +221,15 @@ const Booking = () => {
                   <div className="space-y-2">
                     <Label htmlFor="instructor">Instructor (Optional)</Label>
                     <Select
-                      value={formData.instructor_id}
+                      value={formData.instructor_id || undefined}
                       onValueChange={(value) =>
                         setFormData({ ...formData, instructor_id: value })
                       }
                     >
                       <SelectTrigger id="instructor">
-                        <SelectValue placeholder="Select instructor" />
+                        <SelectValue placeholder="No instructor (Optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
                         {instructors.map((inst) => (
                           <SelectItem key={inst.id} value={inst.id}>
                             {inst.profiles?.full_name || inst.profiles?.email}
