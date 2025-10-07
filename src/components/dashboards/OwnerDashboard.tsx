@@ -6,25 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/Layout";
 import { ServiceRequestDialog } from "@/components/ServiceRequestDialog";
 import { Plane, Calendar, Wrench, CreditCard, Award } from "lucide-react";
-
 export default function OwnerDashboard() {
-  const { user } = useAuth();
-
-  const { data: aircraft } = useQuery({
+  const {
+    user
+  } = useAuth();
+  const {
+    data: aircraft
+  } = useQuery({
     queryKey: ["owner-aircraft", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("aircraft")
-        .select("*")
-        .eq("owner_id", user?.id)
-        .limit(1)
-        .single();
+      const {
+        data
+      } = await supabase.from("aircraft").select("*").eq("owner_id", user?.id).limit(1).single();
       return data;
-    },
+    }
   });
-
-  return (
-    <Layout>
+  return <Layout>
       <div className="container mx-auto p-6 space-y-6">
         <div>
           <h2 className="text-3xl font-bold mb-2">Owner Dashboard</h2>
@@ -38,8 +35,7 @@ export default function OwnerDashboard() {
               <Plane className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {aircraft ? (
-                <div>
+              {aircraft ? <div>
                   <div className="text-2xl font-bold">{aircraft.tail_number}</div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {aircraft.model}
@@ -47,10 +43,7 @@ export default function OwnerDashboard() {
                   <p className="text-xs text-muted-foreground">
                     Base: {aircraft.base_location}
                   </p>
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">No aircraft assigned</div>
-              )}
+                </div> : <div className="text-sm text-muted-foreground">No aircraft assigned</div>}
             </CardContent>
           </Card>
 
@@ -108,9 +101,7 @@ export default function OwnerDashboard() {
                 Book a Flight
               </Button>
               <ServiceRequestDialog aircraft={aircraft ? [aircraft] : []} />
-              <Button className="w-full" variant="outline">
-                Upload Document
-              </Button>
+              
             </CardContent>
           </Card>
 
@@ -124,6 +115,5 @@ export default function OwnerDashboard() {
           </Card>
         </div>
       </div>
-    </Layout>
-  );
+    </Layout>;
 }
