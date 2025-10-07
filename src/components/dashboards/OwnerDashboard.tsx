@@ -2,9 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/Layout";
-import { Plane, Calendar, Wrench } from "lucide-react";
+import { Plane, Calendar, Wrench, CreditCard, Award } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -23,13 +22,15 @@ export default function OwnerDashboard() {
     queryKey: ["owner-aircraft", user?.id],
     enabled: Boolean(user?.id),
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!user?.id) {
+        return [];
+      }
       const { data } = await supabase
         .from("aircraft")
         .select("*")
         .eq("owner_id", user?.id)
         .limit(1)
-        .single();
+        .maybeSingle();
       return data;
     }
   });
@@ -38,6 +39,7 @@ export default function OwnerDashboard() {
   const [loading, setLoading] = useState(false);
   const [fuelGrades, setFuelGrades] = useState<string[]>(["100LL","Jet-A","Jet-A+","MOGAS"]);
 
+  // Form state for "Prepare My Aircraft"
   const [form, setForm] = useState({
     aircraft_id: "",
     airport: "",
@@ -55,45 +57,21 @@ export default function OwnerDashboard() {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  const selectedAircraft = useMemo(() => {
-    if (!aircraft) return null;
-    return form.aircraft_id === String(aircraft.id) ? aircraft : null;
-  }, [aircraft, form.aircraft_id]);
+  const selectedAircraft = useMemo(
+    () => (aircraft || []).find((a: any) => a.id === form.aircraft_id),
+    [aircraft, form.aircraft_id]
+  );
 
   useEffect(() => {
-    if (!aircraft?.id) return;
-    setForm((f) => {
-      const next: typeof f = { ...f };
-      let changed = false;
-
-      if (!f.aircraft_id) {
-        next.aircraft_id = String(aircraft.id);
-        changed = true;
-      }
-
-      if (!f.airport && aircraft.base_location) {
-        next.airport = aircraft.base_location.toUpperCase();
-        changed = true;
-      }
-
-      return changed ? next : f;
-    });
-  }, [aircraft]);
-
-  useEffect(() => {
-    if (!selectedAircraft?.base_location) return;
-    setForm((f) => {
-      if (f.airport) return f;
-      return {
-        ...f,
-        airport: (selectedAircraft.base_location || "").toUpperCase(),
-      };
-    });
+    if (selectedAircraft?.base_location && !form.airport) {
+      setForm(f => ({ ...f, airport: (selectedAircraft.base_location || "").toUpperCase() }));
+    }
   }, [selectedAircraft]);
 
+  // Optional: dynamic fuel grades from a Lovable-editable lookup
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("lookup_fuel_grades")
         .select("grade")
         .eq("active", true)
@@ -103,14 +81,6 @@ export default function OwnerDashboard() {
       }
     })();
   }, []);
-
-  useEffect(() => {
-    if (!fuelGrades.length) return;
-    setForm((f) => {
-      if (fuelGrades.includes(f.fuel_grade)) return f;
-      return { ...f, fuel_grade: fuelGrades[0] };
-    });
-  }, [fuelGrades]);
 
   async function submitPrepareRequest(e: React.FormEvent) {
     e.preventDefault();
@@ -129,7 +99,7 @@ export default function OwnerDashboard() {
         })(),
         airport: form.airport?.toUpperCase() || null,
       };
-      const { error } = await supabase.from("service_requests").insert(payload);
+      const { error } = await (supabase as any).from("service_requests").insert(payload);
       if (error) throw error;
       setOpenPrep(false);
       setForm({
@@ -162,167 +132,187 @@ export default function OwnerDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="flex items-center justify-between">
-              <CardTitle>Pre-Flight Concierge</CardTitle>
-              <Dialog open={openPrep} onOpenChange={setOpenPrep}>
-                <DialogTrigger asChild>
-                  <Button variant="default">Prepare My Aircraft</Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-xl">
-                  <DialogHeader>
-                    <DialogTitle>Prepare My Aircraft</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={submitPrepareRequest} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="aircraft">Aircraft</Label>
-                        <Select
-                          value={form.aircraft_id}
-                          onValueChange={(v) => updateForm("aircraft_id", v)}
-                        >
-                          <SelectTrigger id="aircraft">
-                            <SelectValue placeholder={aircraft ? "Select aircraft" : "No aircraft available"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {aircraft ? (
-                              <SelectItem value={String(aircraft.id)}>{aircraft.tail_number}</SelectItem>
-                            ) : (
-                              <SelectItem value="">(No aircraft found)</SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="airport">Airport</Label>
-                        <Input
-                          id="airport"
-                          placeholder="e.g., KAPA"
-                          value={form.airport}
-                          onChange={(e) => updateForm("airport", e.target.value.toUpperCase())}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="requested_departure">Requested Departure</Label>
-                        <Input
-                          id="requested_departure"
-                          type="datetime-local"
-                          value={form.requested_departure}
-                          onChange={(e) => updateForm("requested_departure", e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Fuel</Label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Select
-                            value={form.fuel_grade}
-                            onValueChange={(v) => updateForm("fuel_grade", v)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Grade" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {fuelGrades.map((g) => (
-                                <SelectItem key={g} value={g}>{g}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            placeholder="Gallons"
-                            inputMode="decimal"
-                            value={form.fuel_quantity}
-                            onChange={(e) => updateForm("fuel_quantity", e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="o2_topoff"
-                          checked={form.o2_topoff}
-                          onCheckedChange={(v) => updateForm("o2_topoff", !!v)}
-                        />
-                        <Label htmlFor="o2_topoff">O₂ Top-off</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="tks_topoff"
-                          checked={form.tks_topoff}
-                          onCheckedChange={(v) => updateForm("tks_topoff", !!v)}
-                        />
-                        <Label htmlFor="tks_topoff">TKS Top-off</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="gpu_required"
-                          checked={form.gpu_required}
-                          onCheckedChange={(v) => updateForm("gpu_required", !!v)}
-                        />
-                        <Label htmlFor="gpu_required">GPU</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="hangar_pullout"
-                          checked={form.hangar_pullout}
-                          onCheckedChange={(v) => updateForm("hangar_pullout", !!v)}
-                        />
-                        <Label htmlFor="hangar_pullout">Hangar Pull-out</Label>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="cabin_provisioning">Cabin Provisioning</Label>
-                        <Textarea
-                          id="cabin_provisioning"
-                          placeholder='e.g., {"water":6,"snacks":true}'
-                          value={form.cabin_provisioning}
-                          onChange={(e) => updateForm("cabin_provisioning", e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="description">Notes</Label>
-                        <Textarea
-                          id="description"
-                          placeholder="Anything else we should prepare?"
-                          value={form.description}
-                          onChange={(e) => updateForm("description", e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <DialogFooter className="mt-2">
-                      <Button type="button" variant="outline" onClick={() => setOpenPrep(false)}>Cancel</Button>
-                      <Button type="submit" disabled={loading}>{loading ? "Sending..." : "Send Request"}</Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Tell us when you plan to fly and what you need—we’ll ready your aircraft.
-              </p>
+          <Card className="border-2 hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <PlaneTakeoff className="h-6 w-6 text-primary" />
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          <Card>
+    <CardHeader className="flex items-center justify-between">
+      <CardTitle>Pre-Flight Concierge</CardTitle>
+      <Dialog open={openPrep} onOpenChange={setOpenPrep}>
+        <DialogTrigger asChild>
+          <Button variant="default">Prepare My Aircraft</Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Prepare My Aircraft</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={submitPrepareRequest} className="space-y-4">
+            {/* Aircraft & Airport */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="aircraft">Aircraft</Label>
+                <Select
+                  value={form.aircraft_id}
+                  onValueChange={(v) => updateForm("aircraft_id", v)}
+                >
+                  <SelectTrigger id="aircraft">
+                    <SelectValue placeholder={(aircraft || []).length ? "Select aircraft" : "No aircraft available"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(aircraft || []).map((a: any) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.tail_number}
+                      </SelectItem>
+                    ))}
+                    {!(aircraft || []).length && (
+                      <SelectItem value="">
+                        (No aircraft found)
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="airport">Airport</Label>
+                <Input
+                  id="airport"
+                  placeholder="e.g., KAPA"
+                  value={form.airport}
+                  onChange={(e) => updateForm("airport", e.target.value.toUpperCase())}
+                />
+              </div>
+            </div>
+
+            {/* Departure & Fuel */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="requested_departure">Requested Departure</Label>
+                <Input
+                  id="requested_departure"
+                  type="datetime-local"
+                  value={form.requested_departure}
+                  onChange={(e) => updateForm("requested_departure", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Fuel</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Select
+                    value={form.fuel_grade}
+                    onValueChange={(v) => updateForm("fuel_grade", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fuelGrades.map((g) => (
+                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="Gallons"
+                    inputMode="decimal"
+                    value={form.fuel_quantity}
+                    onChange={(e) => updateForm("fuel_quantity", e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Ground services */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="o2_topoff"
+                  checked={form.o2_topoff}
+                  onCheckedChange={(v) => updateForm("o2_topoff", !!v)}
+                />
+                <Label htmlFor="o2_topoff">O₂ Top-off</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="tks_topoff"
+                  checked={form.tks_topoff}
+                  onCheckedChange={(v) => updateForm("tks_topoff", !!v)}
+                />
+                <Label htmlFor="tks_topoff">TKS Top-off</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="gpu_required"
+                  checked={form.gpu_required}
+                  onCheckedChange={(v) => updateForm("gpu_required", !!v)}
+                />
+                <Label htmlFor="gpu_required">GPU</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="hangar_pullout"
+                  checked={form.hangar_pullout}
+                  onCheckedChange={(v) => updateForm("hangar_pullout", !!v)}
+                />
+                <Label htmlFor="hangar_pullout">Hangar Pull-out</Label>
+              </div>
+            </div>
+
+            {/* Provisioning & Notes */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cabin_provisioning">Cabin Provisioning</Label>
+                <Textarea
+                  id="cabin_provisioning"
+                  placeholder='e.g., {"water":6,"snacks":true}'
+                  value={form.cabin_provisioning}
+                  onChange={(e) => updateForm("cabin_provisioning", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Notes</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Anything else we should prepare?"
+                  value={form.description}
+                  onChange={(e) => updateForm("description", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="mt-2">
+              <Button type="button" variant="outline" onClick={() => setOpenPrep(false)}>Cancel</Button>
+              <Button type="submit" disabled={loading}>{loading ? "Sending..." : "Send Request"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </CardHeader>
+    <CardContent>
+      <p className="text-sm text-muted-foreground">
+        Tell us when you plan to fly and what you need—we’ll ready your aircraft.
+      </p>
+    </CardContent>
+  </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Next Flight</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <CardTitle className="text-xl">Preflight Services</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Schedule fuel, fluids, and preflight preparations
+                  </p>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="mb-2">
-                <CardTitle className="text-xl">Preflight Services</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Schedule fuel, fluids, and preflight preparations
-                </p>
-              </div>
               <ServiceRequestDialog 
                 aircraft={aircraft ? [{ ...aircraft, id: String(aircraft.id) }] : []} 
                 defaultPreflight={true}

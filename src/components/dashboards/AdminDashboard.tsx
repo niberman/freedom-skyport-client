@@ -38,7 +38,7 @@ export default function AdminDashboard() {
         aircraft: aircraftRes.count ?? 0,
         owners: ownerRes.count ?? 0,
         openServices: serviceRes.count ?? 0,
-        upcomingFlights: 0, // placeholder
+        upcomingFlights: 0,
       };
     },
     staleTime: 60_000,
@@ -48,6 +48,12 @@ export default function AdminDashboard() {
     },
   });
 
+import { Plane, Users, Wrench, Settings } from "lucide-react";
+import { ServicesManagement } from "@/components/admin/ServicesManagement";
+import { FlightHoursManagement } from "@/components/admin/FlightHoursManagement";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+export default function AdminDashboard() {
   return (
     <Layout>
       <div className="container mx-auto p-6 space-y-6">
@@ -63,7 +69,7 @@ export default function AdminDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts.owners}</div>
+              <div className="text-2xl font-bold">{counts.aircraft}</div>
             </CardContent>
           </Card>
 
@@ -73,7 +79,7 @@ export default function AdminDashboard() {
               <Plane className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts.aircraft}</div>
+              <div className="text-2xl font-bold">{counts.owners}</div>
             </CardContent>
           </Card>
 
@@ -83,7 +89,7 @@ export default function AdminDashboard() {
               <Wrench className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts.openServices}</div>
+              <div className="text-2xl font-bold">{counts.upcomingFlights}</div>
             </CardContent>
           </Card>
 
@@ -93,8 +99,8 @@ export default function AdminDashboard() {
               <Settings className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Operational</div>
-              <div className="text-sm text-green-600">All systems normal</div>
+              <div className="text-2xl font-bold">{counts.openServices}</div>
+              <div className="text-sm text-green-600">Operational</div>
             </CardContent>
           </Card>
         </div>
@@ -149,14 +155,13 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-
-          <Tabs defaultValue="services" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="services">Service Options</TabsTrigger>
-              <TabsTrigger value="flight-hours">Flight Hours</TabsTrigger>
-              <TabsTrigger value="requests">Service Requests</TabsTrigger>
-              <TabsTrigger value="aircraft">Aircraft</TabsTrigger>
-            </TabsList>
+        <Tabs defaultValue="services" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="services">Service Options</TabsTrigger>
+            <TabsTrigger value="flight-hours">Flight Hours</TabsTrigger>
+            <TabsTrigger value="requests">Service Requests</TabsTrigger>
+            <TabsTrigger value="aircraft">Aircraft</TabsTrigger>
+          </TabsList>
 
             <TabsContent value="services">
               <ServicesManagement />
