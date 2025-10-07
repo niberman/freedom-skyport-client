@@ -19,7 +19,7 @@ export function useUserRole() {
         .maybeSingle();
 
       if (error) throw error;
-      return data?.role as UserRole | null;
+      return data ? (data.role as UserRole) : null;
     },
     enabled: !!user,
   });
