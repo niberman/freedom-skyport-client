@@ -67,7 +67,7 @@ export default function OwnerDashboard() {
       }
       const { data, error } = await supabase
         .from("service_requests")
-        .select("id", { count: "exact", head: true })
+        .select("id")
         .eq("user_id", user?.id)
         .in("status", ["pending", "in_progress"]);
       
