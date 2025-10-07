@@ -140,5 +140,133 @@ export function FlightHoursTracker() {
       aircraft_id: formData.aircraft_id || (aircraft?.id ? String(aircraft.id) : null)
     });
   };
-  return;
+
+  if (!aircraft) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Flight Hours</CardTitle>
+          <CardDescription>No aircraft registered</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Flight Hours</CardTitle>
+            <CardDescription>Track your monthly flight activity</CardDescription>
+          </div>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="mr-2 h-4 w-4" />
+                Log Hours
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Log Flight Hours</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="flight_date">Date</Label>
+                    <Input
+                      id="flight_date"
+                      type="date"
+                      value={formData.flight_date}
+                      onChange={(e) => setFormData({ ...formData, flight_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="hours">Hours</Label>
+                    <Input
+                      id="hours"
+                      type="number"
+                      step="0.1"
+                      placeholder="2.5"
+                      value={formData.hours_flown}
+                      onChange={(e) => setFormData({ ...formData, hours_flown: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="departure">Departure</Label>
+                    <Input
+                      id="departure"
+                      placeholder="KAPA"
+                      value={formData.departure_airport}
+                      onChange={(e) => setFormData({ ...formData, departure_airport: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="arrival">Arrival</Label>
+                    <Input
+                      id="arrival"
+                      placeholder="KDEN"
+                      value={formData.arrival_airport}
+                      onChange={(e) => setFormData({ ...formData, arrival_airport: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Flight notes..."
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "Logging..." : "Log Hours"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div>
+              <p className="text-sm text-muted-foreground">Month to Date</p>
+              <p className="text-2xl font-bold">{monthlyHours?.toFixed(1) || "0.0"} hrs</p>
+            </div>
+            <Plane className="h-8 w-8 text-muted-foreground" />
+          </div>
+
+          {recentFlights && recentFlights.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Recent Flights</h4>
+              <div className="space-y-2">
+                {recentFlights.map((flight: any) => (
+                  <div key={flight.id} className="flex items-center justify-between text-sm p-2 border rounded">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">
+                        {format(new Date(flight.flight_date), "MMM d")}
+                      </span>
+                      {flight.departure_airport && flight.arrival_airport && (
+                        <span className="text-muted-foreground">
+                          {flight.departure_airport} → {flight.arrival_airport}
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-medium">{flight.hours_flown.toFixed(1)} hrs</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
