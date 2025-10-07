@@ -1,8 +1,51 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { Plane, Users, Calendar, Wrench, CreditCard, Activity } from "lucide-react";
-//test comment
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const [openInfo, setOpenInfo] = useState(false);
+  const defaultCounts = { aircraft: 0, owners: 0, openServices: 0, upcomingFlights: 0 };
+
+  const { data: counts = defaultCounts } = useQuery({
+    queryKey: ["admin-dashboard-counts", user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: async () => {
+      const [aircraftRes, ownerRes, serviceRes] = await Promise.all([
+        supabase.from("aircraft").select("*", { count: "exact", head: true }),
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        (supabase as any)
+          .from("service_requests")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "open"),
+      ]);
+
+      const errors = [aircraftRes.error, ownerRes.error, serviceRes.error].filter(Boolean);
+      if (errors.length) {
+        throw new Error(
+          errors
+            .map((error) => (typeof error === "object" && error !== null ? (error as Error).message : String(error)))
+            .join("; ")
+        );
+      }
+
+      return {
+        aircraft: aircraftRes.count ?? 0,
+        owners: ownerRes.count ?? 0,
+        openServices: serviceRes.count ?? 0,
+        upcomingFlights: 0, // placeholder
+      };
+    },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    onError: (error) => {
+      console.error("[AdminDashboard] count fetch error", error);
+    },
+  });
 
   return (
     <Layout>
@@ -19,7 +62,7 @@ export default function AdminDashboard() {
               <Plane className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{counts.aircraft}</div>
             </CardContent>
           </Card>
 
@@ -29,7 +72,7 @@ export default function AdminDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{counts.owners}</div>
             </CardContent>
           </Card>
 
@@ -39,7 +82,7 @@ export default function AdminDashboard() {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{counts.upcomingFlights}</div>
             </CardContent>
           </Card>
 
@@ -49,7 +92,7 @@ export default function AdminDashboard() {
               <Wrench className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{counts.openServices}</div>
             </CardContent>
           </Card>
         </div>
@@ -61,10 +104,26 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
-                <button className="p-3 border rounded-lg hover:bg-accent transition-colors text-left">
-                  <Plane className="h-5 w-5 mb-2 text-primary" />
-                  <p className="text-sm font-medium">Manage Aircraft</p>
-                </button>
+                <Dialog open={openInfo} onOpenChange={setOpenInfo}>
+                  <DialogTrigger asChild>
+                    <button className="p-3 border rounded-lg hover:bg-accent transition-colors text-left w-full">
+                      <Plane className="h-5 w-5 mb-2 text-primary" />
+                      <p className="text-sm font-medium">Prepare My Aircraft</p>
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Prepare My Aircraft</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                      Owners can submit pre-flight concierge requests from their dashboard.
+                      As an admin, use the Owner view or create a request directly in Lovable under <code>service_requests</code>.
+                    </p>
+                    <div className="mt-3">
+                      <a href="/owner" className="text-primary underline">Open Owner Dashboard</a>
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 <button className="p-3 border rounded-lg hover:bg-accent transition-colors text-left">
                   <Users className="h-5 w-5 mb-2 text-primary" />
                   <p className="text-sm font-medium">View Owners</p>
