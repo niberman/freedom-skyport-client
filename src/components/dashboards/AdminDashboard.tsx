@@ -1,11 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
-import { Plane, Users, Calendar, Wrench, CreditCard, Activity } from "lucide-react";
+import { Plane, Users, Calendar, Wrench, CreditCard, Activity, Settings } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { ServicesManagement } from "@/components/admin/ServicesManagement";
+import { FlightHoursManagement } from "@/components/admin/FlightHoursManagement";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [openInfo, setOpenInfo] = useState(false);
@@ -37,22 +41,13 @@ export default function AdminDashboard() {
         aircraft: aircraftRes.count ?? 0,
         owners: ownerRes.count ?? 0,
         openServices: serviceRes.count ?? 0,
-        upcomingFlights: 0, // placeholder
+        upcomingFlights: 0,
       };
     },
     staleTime: 60_000,
     refetchOnWindowFocus: false,
-    onError: (error) => {
-      console.error("[AdminDashboard] count fetch error", error);
-    },
   });
 
-import { Plane, Users, Wrench, Settings } from "lucide-react";
-import { ServicesManagement } from "@/components/admin/ServicesManagement";
-import { FlightHoursManagement } from "@/components/admin/FlightHoursManagement";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-export default function AdminDashboard() {
   return (
     <Layout>
       <div className="container mx-auto p-6 space-y-6">
@@ -68,7 +63,7 @@ export default function AdminDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts.aircraft}</div>
+              <div className="text-2xl font-bold">{counts?.aircraft ?? 0}</div>
             </CardContent>
           </Card>
 
@@ -78,7 +73,7 @@ export default function AdminDashboard() {
               <Plane className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts.owners}</div>
+              <div className="text-2xl font-bold">{counts?.owners ?? 0}</div>
             </CardContent>
           </Card>
 
@@ -88,7 +83,7 @@ export default function AdminDashboard() {
               <Wrench className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts.upcomingFlights}</div>
+              <div className="text-2xl font-bold">{counts?.upcomingFlights ?? 0}</div>
             </CardContent>
           </Card>
 
@@ -98,7 +93,7 @@ export default function AdminDashboard() {
               <Settings className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts.openServices}</div>
+              <div className="text-2xl font-bold">{counts?.openServices ?? 0}</div>
               <div className="text-sm text-green-600">Operational</div>
             </CardContent>
           </Card>
@@ -154,6 +149,8 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
         <Tabs defaultValue="services" className="space-y-4">
           <TabsList>
             <TabsTrigger value="services">Service Options</TabsTrigger>
