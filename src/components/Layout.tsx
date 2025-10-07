@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
-import logo from "@/assets/logo.png";
 
 interface LayoutProps {
   children: ReactNode;
@@ -16,7 +15,7 @@ export function Layout({ children }: LayoutProps) {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Freedom Aviation Logo" className="h-10 w-auto" />
+            <img src="https://storage.googleapis.com/gpt-engineer-file-uploads/IpqYjiQoApct98b0kk7EtZ5ZRvi1/uploads/1759857305366-Screenshot 2025-09-19 at 10.34.45 AM.png" alt="Freedom Aviation Logo" className="h-10 w-auto" />
             <h1 className="text-xl font-bold">Freedom Aviation</h1>
           </div>
           {user && (

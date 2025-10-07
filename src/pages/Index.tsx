@@ -1,14 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Calendar, Wrench, Shield } from "lucide-react";
-import logo from "@/assets/logo.png";
 const Index = () => {
   const navigate = useNavigate();
   return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <div className="flex justify-center mb-6">
-            <img src={logo} alt="Freedom Aviation Logo" className="h-32 w-auto" />
+            <img src="https://storage.googleapis.com/gpt-engineer-file-uploads/IpqYjiQoApct98b0kk7EtZ5ZRvi1/uploads/1759857305366-Screenshot 2025-09-19 at 10.34.45 AM.png" alt="Freedom Aviation Logo" className="h-32 w-auto" />
           </div>
           <h1 className="text-5xl font-bold mb-4">Freedom Aviation</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">Premium aircraft management and flight instruction across Colorado</p>
