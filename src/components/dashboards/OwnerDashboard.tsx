@@ -3,8 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
-import { Plane, Calendar, Wrench, ExternalLink } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Plane, Calendar, Wrench } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -12,9 +11,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useEffect, useMemo, useState } from "react";
 import { CreditsOverview } from "@/components/owner/CreditsOverview";
 import { FlightHoursTracker } from "@/components/owner/FlightHoursTracker";
+import { HoursCard } from "@/features/owner/components/HoursCard";
+import { QuickActions } from "@/features/owner/components/QuickActions";
+import { ServiceTimeline } from "@/features/owner/components/ServiceTimeline";
+import { BillingCard } from "@/features/owner/components/BillingCard";
+import { DocsCard } from "@/features/owner/components/DocsCard";
 import { toast } from "sonner";
 
 export default function OwnerDashboard() {
@@ -80,6 +85,115 @@ export default function OwnerDashboard() {
     }
   });
 
+  // Fetch MTD hours for HoursCard
+  const { data: mtdHours = 0 } = useQuery({
+    queryKey: ["mtd-hours", aircraft?.id, user?.id],
+    enabled: Boolean(aircraft?.id && user?.id),
+    queryFn: async () => {
+      if (!aircraft?.id || !user?.id) return 0;
+      
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from("flight_hours")
+        .select("hours_flown")
+        .eq("aircraft_id", aircraft.id)
+        .eq("owner_id", user.id)
+        .gte("flight_date", startOfMonth.toISOString().split("T")[0]);
+      
+      if (error) {
+        console.error("Error fetching MTD hours:", error);
+        return 0;
+      }
+      
+      return data.reduce((sum, row) => sum + Number(row.hours_flown), 0);
+    },
+  });
+
+  // Fetch service tasks for timeline
+  const { data: serviceTasks = [], isLoading: tasksLoading } = useQuery({
+    queryKey: ["service-tasks", aircraft?.id],
+    enabled: Boolean(aircraft?.id && user?.id),
+    queryFn: async () => {
+      if (!aircraft?.id) return [];
+      
+      const { data, error } = await supabase
+        .from("service_tasks")
+        .select("*")
+        .eq("aircraft_id", aircraft.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      
+      if (error) {
+        console.error("Error fetching service tasks:", error);
+        return [];
+      }
+      
+      // Transform the data to match ServiceTask type
+      return data.map((task) => ({
+        id: task.id,
+        aircraft_id: task.aircraft_id,
+        type: task.type,
+        status: task.status,
+        assigned_to: task.assigned_to,
+        notes: task.notes,
+        photos: Array.isArray(task.photos) ? task.photos.filter((p): p is string => typeof p === 'string') : [],
+        completed_at: task.completed_at,
+        created_at: task.created_at,
+        updated_at: task.updated_at,
+      }));
+    },
+  });
+
+  // Fetch invoices for billing
+  const { data: invoices = [], isLoading: invoicesLoading } = useQuery({
+    queryKey: ["invoices", aircraft?.id, user?.id],
+    enabled: Boolean(aircraft?.id && user?.id),
+    queryFn: async () => {
+      if (!aircraft?.id || !user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("*")
+        .eq("aircraft_id", aircraft.id)
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(6);
+      
+      if (error) {
+        console.error("Error fetching invoices:", error);
+        return [];
+      }
+      
+      return data;
+    },
+  });
+
+  // Fetch membership
+  const { data: membership = null } = useQuery({
+    queryKey: ["membership", user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("memberships")
+        .select("*")
+        .eq("owner_id", user.id)
+        .eq("active", true)
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error fetching membership:", error);
+        return null;
+      }
+      
+      return data;
+    },
+  });
+
   // Real-time subscription for service requests
   useEffect(() => {
     if (!user?.id) return;
@@ -117,6 +231,27 @@ export default function OwnerDashboard() {
       supabase.removeChannel(channel);
     };
   }, [user?.id, refetchNextFlight, refetchOpenServices]);
+
+  // Calculate readiness status
+  const readinessTypes = [
+    "readiness",
+    "clean",
+    "detail",
+    "oil",
+    "o2",
+    "tks",
+    "db_update",
+  ];
+  
+  const hasOpenTask = serviceTasks.some(
+    (task) =>
+      task.status !== "completed" &&
+      task.status !== "cancelled" &&
+      readinessTypes.some((type) => task.type.toLowerCase().includes(type))
+  );
+
+  const readinessStatus = hasOpenTask ? "Needs Service" : "Ready";
+  const readinessVariant = hasOpenTask ? "destructive" : "default";
 
   const [openPrep, setOpenPrep] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -430,12 +565,16 @@ export default function OwnerDashboard() {
                     <p className="text-sm text-muted-foreground">{aircraft.model}</p>
                     <p className="text-sm text-muted-foreground">Base: {aircraft.base_location}</p>
                   </div>
-                  <Link to={`/owner/${aircraft.id}`}>
-                    <Button variant="outline" size="sm" className="w-full">
-                      View Details
-                      <ExternalLink className="ml-2 h-3 w-3" />
-                    </Button>
-                  </Link>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {membership && (
+                      <Badge variant="secondary">
+                        {membership.tier}
+                      </Badge>
+                    )}
+                    <Badge variant={readinessVariant as any}>
+                      {readinessStatus}
+                    </Badge>
+                  </div>
                 </div>
               ) : (
                 <div className="text-sm text-muted-foreground">No aircraft assigned</div>
@@ -455,6 +594,19 @@ export default function OwnerDashboard() {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <HoursCard mtdHours={mtdHours} />
+          {aircraft && user && (
+            <QuickActions aircraftId={aircraft.id} userId={user.id} />
+          )}
+          <BillingCard invoices={invoices} isLoading={invoicesLoading} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ServiceTimeline tasks={serviceTasks} isLoading={tasksLoading} />
+          <DocsCard />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
