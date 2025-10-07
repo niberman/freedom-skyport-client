@@ -22,7 +22,7 @@ export type Database = {
           description: string | null
           id: string
           metadata: Json | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           action_type: string
@@ -31,7 +31,7 @@ export type Database = {
           description?: string | null
           id?: string
           metadata?: Json | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           action_type?: string
@@ -40,7 +40,7 @@ export type Database = {
           description?: string | null
           id?: string
           metadata?: Json | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
