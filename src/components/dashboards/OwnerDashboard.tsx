@@ -82,12 +82,10 @@ export default function OwnerDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full" variant="outline">
-                Book a Flight
-              </Button>
+              
               <ServiceRequestDialog aircraft={aircraft ? [aircraft] : []} />
               
             </CardContent>
