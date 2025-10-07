@@ -1,11 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
-import { Plane, Users, Calendar, Wrench, CreditCard, Activity, Settings } from "lucide-react";
+import { Plane, Users, Wrench, Settings } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import { ServicesManagement } from "@/components/admin/ServicesManagement";
 import { FlightHoursManagement } from "@/components/admin/FlightHoursManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,17 +44,9 @@ export default function AdminDashboard() {
     },
     staleTime: 60_000,
     refetchOnWindowFocus: false,
-    onError: (error) => {
-      console.error("[AdminDashboard] count fetch error", error);
-    },
   });
+  
 
-import { Plane, Users, Wrench, Settings } from "lucide-react";
-import { ServicesManagement } from "@/components/admin/ServicesManagement";
-import { FlightHoursManagement } from "@/components/admin/FlightHoursManagement";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-export default function AdminDashboard() {
   return (
     <Layout>
       <div className="container mx-auto p-6 space-y-6">
@@ -69,7 +62,7 @@ export default function AdminDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts.aircraft}</div>
+              <div className="text-2xl font-bold">{counts?.owners ?? 0}</div>
             </CardContent>
           </Card>
 
@@ -79,7 +72,7 @@ export default function AdminDashboard() {
               <Plane className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts.owners}</div>
+              <div className="text-2xl font-bold">{counts?.aircraft ?? 0}</div>
             </CardContent>
           </Card>
 
@@ -89,7 +82,7 @@ export default function AdminDashboard() {
               <Wrench className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts.upcomingFlights}</div>
+              <div className="text-2xl font-bold">{counts?.openServices ?? 0}</div>
             </CardContent>
           </Card>
 
@@ -99,7 +92,6 @@ export default function AdminDashboard() {
               <Settings className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts.openServices}</div>
               <div className="text-sm text-green-600">Operational</div>
             </CardContent>
           </Card>
@@ -112,45 +104,21 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
-                <Dialog open={openInfo} onOpenChange={setOpenInfo}>
-                  <DialogTrigger asChild>
-                    <button className="p-3 border rounded-lg hover:bg-accent transition-colors text-left w-full">
-                      <Plane className="h-5 w-5 mb-2 text-primary" />
-                      <p className="text-sm font-medium">Prepare My Aircraft</p>
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Prepare My Aircraft</DialogTitle>
-                    </DialogHeader>
-                    <p className="text-sm text-muted-foreground">
-                      Owners can submit pre-flight concierge requests from their dashboard.
-                      As an admin, use the Owner view or create a request directly in Lovable under <code>service_requests</code>.
-                    </p>
-                    <div className="mt-3">
-                      <a href="/owner" className="text-primary underline">Open Owner Dashboard</a>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <button className="p-3 border rounded-lg hover:bg-accent transition-colors text-left">
+                  <Plane className="h-5 w-5 mb-2 text-primary" />
+                  <p className="text-sm font-medium">View Aircraft</p>
+                </button>
                 <button className="p-3 border rounded-lg hover:bg-accent transition-colors text-left">
                   <Users className="h-5 w-5 mb-2 text-primary" />
                   <p className="text-sm font-medium">View Owners</p>
-                </button>
-                <button className="p-3 border rounded-lg hover:bg-accent transition-colors text-left">
-                  <Calendar className="h-5 w-5 mb-2 text-primary" />
-                  <p className="text-sm font-medium">View Calendar</p>
                 </button>
                 <button className="p-3 border rounded-lg hover:bg-accent transition-colors text-left">
                   <Wrench className="h-5 w-5 mb-2 text-primary" />
                   <p className="text-sm font-medium">Service Queue</p>
                 </button>
                 <button className="p-3 border rounded-lg hover:bg-accent transition-colors text-left">
-                  <CreditCard className="h-5 w-5 mb-2 text-primary" />
-                  <p className="text-sm font-medium">Billing</p>
-                </button>
-                <button className="p-3 border rounded-lg hover:bg-accent transition-colors text-left">
-                  <Activity className="h-5 w-5 mb-2 text-primary" />
-                  <p className="text-sm font-medium">Activity Log</p>
+                  <Settings className="h-5 w-5 mb-2 text-primary" />
+                  <p className="text-sm font-medium">Settings</p>
                 </button>
               </div>
             </CardContent>
