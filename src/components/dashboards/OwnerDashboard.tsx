@@ -36,6 +36,52 @@ export default function OwnerDashboard() {
     }
   });
 
+  const { data: nextFlight, refetch: refetchNextFlight } = useQuery({
+    queryKey: ["next-flight", user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: async () => {
+      if (!user?.id) {
+        return null;
+      }
+      const { data } = await supabase
+        .from("service_requests")
+        .select("*")
+        .eq("user_id", user?.id)
+        .eq("service_type", "Pre-Flight Concierge")
+        .not("requested_departure", "is", null)
+        .gte("requested_departure", new Date().toISOString())
+        .order("requested_departure", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    }
+  });
+
+  // Real-time subscription for service requests
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('service-requests-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'service_requests',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          refetchNextFlight();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, refetchNextFlight]);
+
   const [openPrep, setOpenPrep] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fuelGrades, setFuelGrades] = useState<string[]>(["100LL", "Jet-A", "Jet-A+", "MOGAS"]);
@@ -309,7 +355,27 @@ export default function OwnerDashboard() {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-muted-foreground">No upcoming flights</div>
+              {nextFlight ? (
+                <div className="space-y-1">
+                  <div className="text-2xl font-bold">
+                    {new Date(nextFlight.requested_departure).toLocaleDateString()}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(nextFlight.requested_departure).toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{nextFlight.airport}</p>
+                  {nextFlight.fuel_quantity && (
+                    <p className="text-xs text-muted-foreground">
+                      {nextFlight.fuel_grade}: {nextFlight.fuel_quantity} gal
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">No upcoming flights</div>
+              )}
             </CardContent>
           </Card>
         </div>
