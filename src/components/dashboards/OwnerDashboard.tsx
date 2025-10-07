@@ -14,8 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useMemo, useState } from "react";
 import { CreditsOverview } from "@/components/owner/CreditsOverview";
-import { FlightHoursTracker } from "@/components/owner/FlightHoursTracker";
-import { HoursCard } from "@/features/owner/components/HoursCard";
 import { QuickActions } from "@/features/owner/components/QuickActions";
 import { ServiceTimeline } from "@/features/owner/components/ServiceTimeline";
 import { BillingCard } from "@/features/owner/components/BillingCard";
@@ -86,32 +84,6 @@ export default function OwnerDashboard() {
     }
   });
 
-  // Fetch MTD hours for HoursCard
-  const { data: mtdHours = 0 } = useQuery({
-    queryKey: ["mtd-hours", aircraft?.id, user?.id],
-    enabled: Boolean(aircraft?.id && user?.id),
-    queryFn: async () => {
-      if (!aircraft?.id || !user?.id) return 0;
-      
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-
-      const { data, error } = await supabase
-        .from("flight_hours")
-        .select("hours_flown")
-        .eq("aircraft_id", aircraft.id)
-        .eq("owner_id", user.id)
-        .gte("flight_date", startOfMonth.toISOString().split("T")[0]);
-      
-      if (error) {
-        console.error("Error fetching MTD hours:", error);
-        return 0;
-      }
-      
-      return data.reduce((sum, row) => sum + Number(row.hours_flown), 0);
-    },
-  });
 
   // Fetch service tasks for timeline
   const { data: serviceTasks = [], isLoading: tasksLoading } = useQuery({
@@ -582,8 +554,7 @@ export default function OwnerDashboard() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <HoursCard mtdHours={mtdHours} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {aircraft && user && (
             <QuickActions aircraftId={aircraft.id} userId={user.id} />
           )}
@@ -599,8 +570,7 @@ export default function OwnerDashboard() {
           <DocsCard />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <FlightHoursTracker />
+        <div className="grid grid-cols-1 gap-6">
           <CreditsOverview />
         </div>
       </div>

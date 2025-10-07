@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOwnerAircraft } from "@/features/owner/hooks/useOwnerAircraft";
 import { AircraftHeader } from "@/features/owner/components/AircraftHeader";
-import { HoursCard } from "@/features/owner/components/HoursCard";
+
 import { QuickActions } from "@/features/owner/components/QuickActions";
 import { ServiceTimeline } from "@/features/owner/components/ServiceTimeline";
 import { BillingCard } from "@/features/owner/components/BillingCard";
@@ -20,7 +20,6 @@ export default function OwnerDashboard() {
 
   const {
     aircraft,
-    mtdHours,
     serviceTasks,
     invoices,
     membership,
@@ -87,8 +86,7 @@ export default function OwnerDashboard() {
           serviceTasks={serviceTasks.data || []}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <HoursCard mtdHours={mtdHours.data || 0} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <QuickActions aircraftId={aircraftId!} userId={user!.id} />
           <BillingCard
             invoices={invoices.data || []}

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Aircraft, ServiceTask, Invoice, FlightHour, Membership } from "../types";
+import type { Aircraft, ServiceTask, Invoice, Membership } from "../types";
 
 export function useOwnerAircraft(aircraftId: string, userId: string | undefined) {
   // Fetch aircraft details
@@ -17,29 +17,6 @@ export function useOwnerAircraft(aircraftId: string, userId: string | undefined)
       
       if (error) throw error;
       return data as Aircraft;
-    },
-  });
-
-  // Fetch MTD hours
-  const mtdHours = useQuery({
-    queryKey: ["mtd-hours", aircraftId],
-    enabled: Boolean(aircraftId && userId),
-    queryFn: async () => {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-
-      const { data, error } = await supabase
-        .from("flight_hours")
-        .select("hours_flown")
-        .eq("aircraft_id", aircraftId)
-        .eq("owner_id", userId)
-        .gte("flight_date", startOfMonth.toISOString().split("T")[0]);
-      
-      if (error) throw error;
-      
-      const total = data.reduce((sum, row) => sum + Number(row.hours_flown), 0);
-      return total;
     },
   });
 
@@ -97,7 +74,6 @@ export function useOwnerAircraft(aircraftId: string, userId: string | undefined)
 
   return {
     aircraft,
-    mtdHours,
     serviceTasks,
     invoices,
     membership,

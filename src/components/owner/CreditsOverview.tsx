@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getTierName, getTierMultiplier } from "@/lib/creditCalculator";
-import { startOfMonth, endOfMonth, format } from "date-fns";
 
 export function CreditsOverview() {
   const { user } = useAuth();
@@ -33,25 +32,8 @@ export function CreditsOverview() {
     enabled: !!user,
   });
 
-  const { data: monthlyHours } = useQuery({
-    queryKey: ["monthly-hours", user?.id],
-    queryFn: async () => {
-      if (!user) return 0;
-      const start = startOfMonth(new Date());
-      const end = endOfMonth(new Date());
-      
-      const { data, error } = await supabase
-        .from("flight_hours")
-        .select("hours_flown")
-        .eq("owner_id", user.id)
-        .gte("flight_date", format(start, "yyyy-MM-dd"))
-        .lte("flight_date", format(end, "yyyy-MM-dd"));
-      
-      if (error) throw error;
-      return data.reduce((sum, entry) => sum + (entry.hours_flown || 0), 0);
-    },
-    enabled: !!user,
-  });
+  // Default to 0 hours since we're removing flight hours tracking
+  const monthlyHours = 0;
 
   const { data: credits } = useQuery({
     queryKey: ["service-credits", user?.id],

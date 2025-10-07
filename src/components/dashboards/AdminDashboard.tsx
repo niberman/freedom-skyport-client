@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ServicesManagement } from "@/components/admin/ServicesManagement";
-import { FlightHoursManagement } from "@/components/admin/FlightHoursManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function AdminDashboard() {
@@ -126,17 +125,12 @@ export default function AdminDashboard() {
         <Tabs defaultValue="services" className="space-y-4">
           <TabsList>
             <TabsTrigger value="services">Service Options</TabsTrigger>
-            <TabsTrigger value="flight-hours">Flight Hours</TabsTrigger>
             <TabsTrigger value="requests">Service Requests</TabsTrigger>
             <TabsTrigger value="aircraft">Aircraft</TabsTrigger>
           </TabsList>
 
             <TabsContent value="services">
               <ServicesManagement />
-            </TabsContent>
-
-            <TabsContent value="flight-hours">
-              <FlightHoursManagement />
             </TabsContent>
 
             <TabsContent value="requests">

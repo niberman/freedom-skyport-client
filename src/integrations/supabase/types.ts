@@ -85,53 +85,6 @@ export type Database = {
         }
         Relationships: []
       }
-      flight_hours: {
-        Row: {
-          aircraft_id: string
-          arrival_airport: string | null
-          created_at: string | null
-          departure_airport: string | null
-          flight_date: string
-          hours_flown: number
-          id: string
-          notes: string | null
-          owner_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          aircraft_id: string
-          arrival_airport?: string | null
-          created_at?: string | null
-          departure_airport?: string | null
-          flight_date: string
-          hours_flown: number
-          id?: string
-          notes?: string | null
-          owner_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          aircraft_id?: string
-          arrival_airport?: string | null
-          created_at?: string | null
-          departure_airport?: string | null
-          flight_date?: string
-          hours_flown?: number
-          id?: string
-          notes?: string | null
-          owner_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flight_hours_aircraft_id_fkey"
-            columns: ["aircraft_id"]
-            isOneToOne: false
-            referencedRelation: "aircraft"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       invoice_lines: {
         Row: {
           created_at: string | null

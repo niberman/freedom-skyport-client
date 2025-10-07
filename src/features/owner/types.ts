@@ -43,17 +43,6 @@ export interface InvoiceLine {
   created_at: string;
 }
 
-export interface FlightHour {
-  id: string;
-  aircraft_id: string;
-  owner_id: string;
-  flight_date: string;
-  hours_flown: number;
-  departure_airport: string | null;
-  arrival_airport: string | null;
-  notes: string | null;
-}
-
 export interface Membership {
   id: string;
   owner_id: string;
