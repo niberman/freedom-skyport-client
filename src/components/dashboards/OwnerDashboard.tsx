@@ -81,9 +81,7 @@ export default function OwnerDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
-            <CardHeader>
-              
-            </CardHeader>
+            
             <CardContent className="space-y-2">
               
               <ServiceRequestDialog aircraft={aircraft ? [aircraft] : []} />
