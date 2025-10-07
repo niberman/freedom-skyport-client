@@ -190,9 +190,87 @@ export function ServiceRequestDialog({
                     </SelectItem>)}
                 </SelectContent>
               </Select>
-            </div>}
+          </div>}
 
-          
+          {!defaultPreflight && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="service">Service</Label>
+                <Select
+                  value={formData.service_id}
+                  onValueChange={(value) => setFormData({ ...formData, service_id: value })}
+                >
+                  <SelectTrigger id="service">
+                    <SelectValue placeholder="Select a service or custom" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services?.reduce((acc, service) => {
+                      const category = service.category;
+                      if (!acc.find((item: any) => item.category === category)) {
+                        acc.push({ category, services: [] });
+                      }
+                      acc.find((item: any) => item.category === category).services.push(service);
+                      return acc;
+                    }, [] as any[]).map((group) => (
+                      <div key={group.category}>
+                        <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
+                          {group.category}
+                        </div>
+                        {group.services.map((service: any) => {
+                          const credits = getServiceCredits(service.id);
+                          return (
+                            <SelectItem key={service.id} value={service.id}>
+                              <div className="flex items-center justify-between w-full">
+                                <span>{service.name}</span>
+                                {credits && (
+                                  <span className="ml-2 text-xs text-muted-foreground">
+                                    ({credits.credits_available} credits)
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </div>
+                    ))}
+                    <SelectItem value="custom">Custom Service</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.service_id === "custom" && (
+                <div className="space-y-2">
+                  <Label htmlFor="custom_service_type">Custom Service Type</Label>
+                  <Input
+                    id="custom_service_type"
+                    value={formData.service_type}
+                    onChange={(e) => setFormData({ ...formData, service_type: e.target.value })}
+                    placeholder="Enter custom service type..."
+                    required
+                    maxLength={100}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <Select
+                  value={formData.priority}
+                  onValueChange={(value) => setFormData({ ...formData, priority: value })}
+                  required
+                >
+                  <SelectTrigger id="priority">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
 
           {formData.service_id === "custom" && <div className="space-y-2">
               <Label htmlFor="custom_service_type">Custom Service Type</Label>
@@ -293,7 +371,7 @@ export function ServiceRequestDialog({
           })} placeholder={formData.is_preflight ? "Any other special requests or notes..." : "Describe the service you need..."} rows={4} maxLength={1000} />
           </div>
 
-          {formData.service_id && formData.service_id !== "custom" && <div className="rounded-md bg-muted p-3 text-sm">
+          {!defaultPreflight && formData.service_id && formData.service_id !== "custom" && <div className="rounded-md bg-muted p-3 text-sm">
               {hasEnoughCredits(formData.service_id) ? <p className="text-green-600 dark:text-green-400">
                   ✓ This service will use your available credits
                 </p> : <p className="text-amber-600 dark:text-amber-400">
