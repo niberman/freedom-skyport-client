@@ -39,6 +39,9 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
     airport: singleAircraft?.base_location || "KAPA",
   });
 
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
   const { data: services } = useQuery({
     queryKey: ["active-services"],
     queryFn: async () => {
@@ -53,8 +56,30 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
     },
   });
 
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { data: serviceCredits } = useQuery({
+    queryKey: ["service-credits", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("service_credits")
+        .select("*")
+        .eq("owner_id", user.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const getServiceCredits = (serviceId: string) => {
+    return serviceCredits?.find((sc) => sc.service_id === serviceId);
+  };
+
+  const hasEnoughCredits = (serviceId: string) => {
+    const service = services?.find((s) => s.id === serviceId);
+    const credits = getServiceCredits(serviceId);
+    if (!service) return false;
+    return (credits?.credits_available || 0) >= (service.credits_required || 1);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,25 +88,33 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
     setLoading(true);
     try {
       const selectedService = services?.find((s) => s.id === formData.service_id);
+      const hasCredits = formData.service_id && formData.service_id !== "custom" 
+        ? hasEnoughCredits(formData.service_id) 
+        : false;
       
       const { error } = await supabase.from("service_requests").insert({
         user_id: user.id,
         aircraft_id: formData.aircraft_id,
-        service_id: formData.service_id || null,
-        service_type: formData.service_id ? selectedService?.name || "" : formData.service_type,
+        service_id: formData.service_id === "custom" ? null : formData.service_id || null,
+        service_type: formData.service_id && formData.service_id !== "custom" ? selectedService?.name || "" : formData.service_type,
         description: formData.description,
         priority: formData.priority,
         airport: formData.airport,
+        is_extra_charge: !hasCredits,
+        credits_used: hasCredits ? (selectedService?.credits_required || 0) : 0,
       });
 
       if (error) throw error;
 
       toast({
         title: "Service request submitted",
-        description: "We'll review your request shortly.",
+        description: hasCredits 
+          ? "Your credits will be deducted upon approval." 
+          : "This will be billed as an extra charge.",
       });
 
       queryClient.invalidateQueries({ queryKey: ["service-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["service-credits"] });
       setOpen(false);
       setFormData({
         aircraft_id: singleAircraft?.id || "",
@@ -158,11 +191,26 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="custom">Custom / Special Request</SelectItem>
-                {services?.map((service) => (
-                  <SelectItem key={service.id} value={service.id}>
-                    {service.name} ({service.category})
-                  </SelectItem>
-                ))}
+                {services?.map((service) => {
+                  const credits = getServiceCredits(service.id);
+                  const hasCredits = hasEnoughCredits(service.id);
+                  return (
+                    <SelectItem key={service.id} value={service.id}>
+                      {service.name} ({service.category})
+                      {credits && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          - {credits.credits_available}/{service.credits_per_period} credits
+                          {!hasCredits && " (extra charge)"}
+                        </span>
+                      )}
+                      {!credits && service.credits_required > 0 && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          (extra charge)
+                        </span>
+                      )}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -236,6 +284,20 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
               maxLength={1000}
             />
           </div>
+
+          {formData.service_id && formData.service_id !== "custom" && (
+            <div className="rounded-md bg-muted p-3 text-sm">
+              {hasEnoughCredits(formData.service_id) ? (
+                <p className="text-green-600 dark:text-green-400">
+                  ✓ This service will use your available credits
+                </p>
+              ) : (
+                <p className="text-amber-600 dark:text-amber-400">
+                  ⚠ No credits available - this will be billed as an extra charge
+                </p>
+              )}
+            </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Submitting..." : "Submit Request"}

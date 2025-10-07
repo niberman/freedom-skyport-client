@@ -85,6 +85,39 @@ export type Database = {
         }
         Relationships: []
       }
+      memberships: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          owner_id: string
+          start_date: string
+          tier: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          owner_id: string
+          start_date?: string
+          tier: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          owner_id?: string
+          start_date?: string
+          tier?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -112,13 +145,56 @@ export type Database = {
         }
         Relationships: []
       }
+      service_credits: {
+        Row: {
+          created_at: string | null
+          credits_available: number | null
+          credits_used_this_period: number | null
+          id: string
+          last_reset_date: string | null
+          owner_id: string
+          service_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credits_available?: number | null
+          credits_used_this_period?: number | null
+          id?: string
+          last_reset_date?: string | null
+          owner_id: string
+          service_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credits_available?: number | null
+          credits_used_this_period?: number | null
+          id?: string
+          last_reset_date?: string | null
+          owner_id?: string
+          service_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_credits_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_requests: {
         Row: {
           aircraft_id: string
           airport: string | null
           created_at: string
+          credits_used: number | null
           description: string
           id: string
+          is_extra_charge: boolean | null
           priority: string
           service_id: string | null
           service_type: string
@@ -130,8 +206,10 @@ export type Database = {
           aircraft_id: string
           airport?: string | null
           created_at?: string
+          credits_used?: number | null
           description: string
           id?: string
+          is_extra_charge?: boolean | null
           priority?: string
           service_id?: string | null
           service_type: string
@@ -143,8 +221,10 @@ export type Database = {
           aircraft_id?: string
           airport?: string | null
           created_at?: string
+          credits_used?: number | null
           description?: string
           id?: string
+          is_extra_charge?: boolean | null
           priority?: string
           service_id?: string | null
           service_type?: string
@@ -178,8 +258,11 @@ export type Database = {
       }
       services: {
         Row: {
+          can_rollover: boolean | null
           category: string
           created_at: string | null
+          credits_per_period: number | null
+          credits_required: number | null
           description: string | null
           id: string
           is_active: boolean | null
@@ -187,8 +270,11 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          can_rollover?: boolean | null
           category: string
           created_at?: string | null
+          credits_per_period?: number | null
+          credits_required?: number | null
           description?: string | null
           id?: string
           is_active?: boolean | null
@@ -196,8 +282,11 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          can_rollover?: boolean | null
           category?: string
           created_at?: string | null
+          credits_per_period?: number | null
+          credits_required?: number | null
           description?: string | null
           id?: string
           is_active?: boolean | null

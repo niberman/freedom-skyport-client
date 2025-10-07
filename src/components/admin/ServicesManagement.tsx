@@ -47,6 +47,9 @@ export function ServicesManagement() {
     name: "",
     description: "",
     category: "maintenance",
+    credits_required: 1,
+    can_rollover: false,
+    credits_per_period: 1,
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -130,7 +133,14 @@ export function ServicesManagement() {
   });
 
   const resetForm = () => {
-    setFormData({ name: "", description: "", category: "maintenance" });
+    setFormData({ 
+      name: "", 
+      description: "", 
+      category: "maintenance",
+      credits_required: 1,
+      can_rollover: false,
+      credits_per_period: 1,
+    });
     setEditingService(null);
   };
 
@@ -143,12 +153,15 @@ export function ServicesManagement() {
     }
   };
 
-  const handleEdit = (service: Service) => {
+  const handleEdit = (service: any) => {
     setEditingService(service);
     setFormData({
       name: service.name,
       description: service.description || "",
       category: service.category,
+      credits_required: service.credits_required || 1,
+      can_rollover: service.can_rollover || false,
+      credits_per_period: service.credits_per_period || 1,
     });
     setOpen(true);
   };
@@ -231,6 +244,50 @@ export function ServicesManagement() {
                   maxLength={500}
                 />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="credits_required">Credits Required</Label>
+                  <Input
+                    id="credits_required"
+                    type="number"
+                    min="0"
+                    value={formData.credits_required}
+                    onChange={(e) =>
+                      setFormData({ ...formData, credits_required: parseInt(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="credits_per_period">Credits Per Month</Label>
+                  <Input
+                    id="credits_per_period"
+                    type="number"
+                    min="0"
+                    value={formData.credits_per_period}
+                    onChange={(e) =>
+                      setFormData({ ...formData, credits_per_period: parseInt(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="can_rollover"
+                  checked={formData.can_rollover}
+                  onChange={(e) =>
+                    setFormData({ ...formData, can_rollover: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-input"
+                />
+                <Label htmlFor="can_rollover" className="cursor-pointer">
+                  Credits can roll over to next month
+                </Label>
+              </div>
+
               <div className="flex justify-end gap-2">
                 <Button
                   type="button"
@@ -261,16 +318,24 @@ export function ServicesManagement() {
               <TableRow>
                 <TableHead>Service Name</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Credits</TableHead>
+                <TableHead>Rollover</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Active</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {services.map((service) => (
+              {services.map((service: any) => (
                 <TableRow key={service.id}>
                   <TableCell className="font-medium">{service.name}</TableCell>
                   <TableCell>{categoryLabels[service.category]}</TableCell>
+                  <TableCell className="text-sm">
+                    {service.credits_required || 0} / {service.credits_per_period || 0} per month
+                  </TableCell>
+                  <TableCell>
+                    {service.can_rollover ? "✓" : "—"}
+                  </TableCell>
                   <TableCell className="max-w-xs truncate">
                     {service.description || "—"}
                   </TableCell>
