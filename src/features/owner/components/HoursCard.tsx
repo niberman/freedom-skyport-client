@@ -1,47 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Clock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from “@/components/ui/card”;
-import { Progress } from “@/components/ui/progress”;
-
-type Props = {
-mtdHours: number;
-};
-
-function tierFor(hours: number) {
-if (hours < 10) return { name: “Tier 1”, range: “0–10”, min: 0, max: 10 };
-if (hours < 25) return { name: “Tier 2”, range: “10–25”, min: 10, max: 25 };
-if (hours < 40) return { name: “Tier 3”, range: “25–40”, min: 25, max: 40 };
-return { name: “Tier 4”, range: “40+”, min: 40, max: 60 }; // cap bar at 60 for visualization
-}
-
-export function HoursCard({ mtdHours }: Props) {
-const tier = tierFor(mtdHours);
-const span = Math.max(1, tier.max - tier.min);
-const progress = Math.min(100, Math.max(0, ((mtdHours - tier.min) / span) * 100));
-
-return (
-
-
-Hours This Month
-
-
-{mtdHours.toFixed(1)} hrs
-
-{tier.name} ({tier.range})
-
-
-
-Tier rules auto-schedule services and consumables.
-
-
-
-);
-}
 
 interface HoursCardProps {
   mtdHours: number;
 }
+
 export function HoursCard({
   mtdHours
 }: HoursCardProps) {
