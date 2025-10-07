@@ -325,7 +325,11 @@ export function ServiceRequestDialog({
                     <Calendar mode="single" selected={formData.flight_time} onSelect={date => setFormData({
                   ...formData,
                   flight_time: date
-                })} disabled={date => date < new Date()} initialFocus className={cn("p-3 pointer-events-auto")} />
+                })} disabled={date => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return date < today;
+                }} initialFocus className={cn("p-3 pointer-events-auto")} />
                     <div className="p-3 border-t">
                       <Label htmlFor="time" className="text-xs">Time (Optional)</Label>
                       <Input id="time" type="time" onChange={e => {
