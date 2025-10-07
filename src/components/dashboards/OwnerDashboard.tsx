@@ -7,7 +7,7 @@ import { Layout } from "@/components/Layout";
 import { ServiceRequestDialog } from "@/components/ServiceRequestDialog";
 import { CreditsOverview } from "@/components/owner/CreditsOverview";
 import { FlightHoursTracker } from "@/components/owner/FlightHoursTracker";
-import { Plane, Calendar, Wrench, CreditCard, Award } from "lucide-react";
+import { Plane, Calendar, Wrench, CreditCard, Award, PlaneTakeoff } from "lucide-react";
 export default function OwnerDashboard() {
   const {
     user
@@ -71,14 +71,37 @@ export default function OwnerDashboard() {
           <CreditsOverview />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Services</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ServiceRequestDialog aircraft={aircraft ? [aircraft] : []} />
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle>Preflight Services</CardTitle>
+              <PlaneTakeoff className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Schedule fuel, fluids, and other preflight preparations
+              </p>
+              <ServiceRequestDialog 
+                aircraft={aircraft ? [aircraft] : []} 
+                defaultPreflight={true}
+                buttonText="Prepare My Aircraft"
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle>Other Services</CardTitle>
+              <Wrench className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Request maintenance, detailing, and other services
+              </p>
+              <ServiceRequestDialog aircraft={aircraft ? [aircraft] : []} />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </Layout>;
 }

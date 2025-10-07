@@ -34,9 +34,11 @@ import { cn } from "@/lib/utils";
 
 interface ServiceRequestDialogProps {
   aircraft: Array<{ id: string; tail_number: string; base_location?: string }>;
+  defaultPreflight?: boolean;
+  buttonText?: string;
 }
 
-export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
+export function ServiceRequestDialog({ aircraft, defaultPreflight = false, buttonText = "Request Service" }: ServiceRequestDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const singleAircraft = aircraft.length === 1 ? aircraft[0] : null;
@@ -47,7 +49,7 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
     description: "",
     priority: "medium",
     airport: singleAircraft?.base_location || "KAPA",
-    is_preflight: false,
+    is_preflight: defaultPreflight,
     flight_time: undefined as Date | undefined,
     fuel_request: "",
     fluid_request: "",
@@ -153,7 +155,7 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
         description: "",
         priority: "medium",
         airport: singleAircraft?.base_location || "KAPA",
-        is_preflight: false,
+        is_preflight: defaultPreflight,
         flight_time: undefined,
         fuel_request: "",
         fluid_request: "",
@@ -173,7 +175,7 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="w-full" variant="outline">
-          Request Service
+          {buttonText}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
@@ -304,21 +306,23 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
             </Select>
           </div>
 
-          <div className="flex items-center space-x-2 pt-2">
-            <Checkbox
-              id="preflight"
-              checked={formData.is_preflight}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, is_preflight: checked as boolean })
-              }
-            />
-            <Label
-              htmlFor="preflight"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              This is a preflight service request
-            </Label>
-          </div>
+          {!defaultPreflight && (
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="preflight"
+                checked={formData.is_preflight}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, is_preflight: checked as boolean })
+                }
+              />
+              <Label
+                htmlFor="preflight"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                This is a preflight service request
+              </Label>
+            </div>
+          )}
 
           {formData.is_preflight && (
             <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
