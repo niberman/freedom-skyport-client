@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
-import { Plane, Calendar, Wrench } from "lucide-react";
+import { Plane, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -63,8 +63,8 @@ export default function OwnerDashboard() {
     }
   });
 
-  const { data: openServices = [], refetch: refetchOpenServices } = useQuery({
-    queryKey: ["open-services", user?.id],
+  const { data: serviceRequests = [], refetch: refetchServiceRequests } = useQuery({
+    queryKey: ["service-requests", user?.id],
     enabled: Boolean(user?.id),
     queryFn: async () => {
       if (!user?.id) {
@@ -74,11 +74,11 @@ export default function OwnerDashboard() {
         .from("service_requests")
         .select("*")
         .eq("user_id", user?.id)
-        .in("status", ["pending", "in_progress"])
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(20);
       
       if (error) {
-        console.error("Error fetching open services:", error);
+        console.error("Error fetching service requests:", error);
         return [];
       }
       
@@ -211,7 +211,7 @@ export default function OwnerDashboard() {
         },
         () => {
           refetchNextFlight();
-          refetchOpenServices();
+          refetchServiceRequests();
         }
       )
       .on(
@@ -223,7 +223,7 @@ export default function OwnerDashboard() {
           filter: `user_id=eq.${user.id}`
         },
         () => {
-          refetchOpenServices();
+          refetchServiceRequests();
         }
       )
       .subscribe();
@@ -231,7 +231,7 @@ export default function OwnerDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, refetchNextFlight, refetchOpenServices]);
+  }, [user?.id, refetchNextFlight, refetchServiceRequests]);
 
   // Calculate readiness status
   const readinessTypes = [
@@ -552,81 +552,35 @@ export default function OwnerDashboard() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-medium">My Aircraft</CardTitle>
-              <Plane className="h-5 w-5 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {aircraft ? (
-                <div className="space-y-2">
-                  <div className="space-y-1">
-                    <div className="text-2xl font-bold">{aircraft.tail_number}</div>
-                    <p className="text-sm text-muted-foreground">{aircraft.model}</p>
-                    <p className="text-sm text-muted-foreground">Base: {aircraft.base_location}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {membership && (
-                      <Badge variant="secondary">
-                        {membership.tier}
-                      </Badge>
-                    )}
-                    <Badge variant={readinessVariant as any}>
-                      {readinessStatus}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base font-medium">My Aircraft</CardTitle>
+            <Plane className="h-5 w-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {aircraft ? (
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <div className="text-2xl font-bold">{aircraft.tail_number}</div>
+                  <p className="text-sm text-muted-foreground">{aircraft.model}</p>
+                  <p className="text-sm text-muted-foreground">Base: {aircraft.base_location}</p>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {membership && (
+                    <Badge variant="secondary">
+                      {membership.tier}
                     </Badge>
-                  </div>
+                  )}
+                  <Badge variant={readinessVariant as any}>
+                    {readinessStatus}
+                  </Badge>
                 </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">No aircraft assigned</div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-medium">Open Services</CardTitle>
-              <Wrench className="h-5 w-5 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {openServices.length > 0 ? (
-                <div className="space-y-3">
-                  {openServices.map((service) => (
-                    <div key={service.id} className="border rounded-lg p-3 space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-1 flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{service.service_type}</div>
-                          {service.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2">{service.description}</p>
-                          )}
-                        </div>
-                        <Badge 
-                          variant={service.status === "pending" ? "secondary" : "default"}
-                          className="shrink-0"
-                        >
-                          {service.status}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        {service.airport && <span>{service.airport}</span>}
-                        {service.requested_departure && (
-                          <span>
-                            {new Date(service.requested_departure).toLocaleDateString()} {new Date(service.requested_departure).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        )}
-                        {!service.requested_departure && (
-                          <span>{new Date(service.created_at).toLocaleDateString()}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">No open service requests</div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">No aircraft assigned</div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <HoursCard mtdHours={mtdHours} />
@@ -637,7 +591,11 @@ export default function OwnerDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ServiceTimeline tasks={serviceTasks} isLoading={tasksLoading} />
+          <ServiceTimeline 
+            tasks={serviceTasks} 
+            requests={serviceRequests}
+            isLoading={tasksLoading} 
+          />
           <DocsCard />
         </div>
 

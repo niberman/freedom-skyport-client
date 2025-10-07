@@ -4,6 +4,8 @@ import { Layout } from "@/components/Layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useOwnerAircraft } from "@/features/owner/hooks/useOwnerAircraft";
 import { AircraftHeader } from "@/features/owner/components/AircraftHeader";
 import { HoursCard } from "@/features/owner/components/HoursCard";
@@ -23,6 +25,30 @@ export default function OwnerDashboard() {
     invoices,
     membership,
   } = useOwnerAircraft(aircraftId!, user?.id);
+
+  // Fetch service requests
+  const { data: serviceRequests = [] } = useQuery({
+    queryKey: ["service-requests", user?.id, aircraftId],
+    enabled: Boolean(user?.id && aircraftId),
+    queryFn: async () => {
+      if (!user?.id || !aircraftId) return [];
+      
+      const { data, error } = await supabase
+        .from("service_requests")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("aircraft_id", aircraftId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      
+      if (error) {
+        console.error("Error fetching service requests:", error);
+        return [];
+      }
+      
+      return data || [];
+    }
+  });
 
   // Show loading state
   if (aircraft.isLoading) {
@@ -73,6 +99,7 @@ export default function OwnerDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ServiceTimeline
             tasks={serviceTasks.data || []}
+            requests={serviceRequests}
             isLoading={serviceTasks.isLoading}
           />
           <DocsCard />
