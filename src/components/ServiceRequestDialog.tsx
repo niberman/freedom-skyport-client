@@ -128,7 +128,7 @@ export function ServiceRequestDialog({
       if (error) throw error;
       toast({
         title: "Service request submitted",
-        description: hasCredits ? "Your credits will be deducted upon approval." : "This will be billed as an extra charge."
+        description: defaultPreflight ? "Your preflight request has been submitted." : hasCredits ? "Your credits will be deducted upon approval." : "This will be billed as an extra charge."
       });
       queryClient.invalidateQueries({
         queryKey: ["service-requests"]
