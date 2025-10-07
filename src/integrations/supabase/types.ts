@@ -287,45 +287,69 @@ export type Database = {
         Row: {
           aircraft_id: string
           airport: string | null
+          cabin_provisioning: Json | null
           created_at: string
           credits_used: number | null
           description: string
+          fuel_grade: string | null
+          fuel_quantity: number | null
+          gpu_required: boolean | null
+          hangar_pullout: boolean | null
           id: string
           is_extra_charge: boolean | null
+          o2_topoff: boolean | null
           priority: string
+          requested_departure: string | null
           service_id: string | null
           service_type: string
           status: string
+          tks_topoff: boolean | null
           updated_at: string
           user_id: string
         }
         Insert: {
           aircraft_id: string
           airport?: string | null
+          cabin_provisioning?: Json | null
           created_at?: string
           credits_used?: number | null
           description: string
+          fuel_grade?: string | null
+          fuel_quantity?: number | null
+          gpu_required?: boolean | null
+          hangar_pullout?: boolean | null
           id?: string
           is_extra_charge?: boolean | null
+          o2_topoff?: boolean | null
           priority?: string
+          requested_departure?: string | null
           service_id?: string | null
           service_type: string
           status?: string
+          tks_topoff?: boolean | null
           updated_at?: string
           user_id: string
         }
         Update: {
           aircraft_id?: string
           airport?: string | null
+          cabin_provisioning?: Json | null
           created_at?: string
           credits_used?: number | null
           description?: string
+          fuel_grade?: string | null
+          fuel_quantity?: number | null
+          gpu_required?: boolean | null
+          hangar_pullout?: boolean | null
           id?: string
           is_extra_charge?: boolean | null
+          o2_topoff?: boolean | null
           priority?: string
+          requested_departure?: string | null
           service_id?: string | null
           service_type?: string
           status?: string
+          tks_topoff?: boolean | null
           updated_at?: string
           user_id?: string
         }
