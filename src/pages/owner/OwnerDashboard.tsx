@@ -1,7 +1,9 @@
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Layout } from "@/components/Layout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { useOwnerAircraft } from "@/features/owner/hooks/useOwnerAircraft";
 import { AircraftHeader } from "@/features/owner/components/AircraftHeader";
 import { HoursCard } from "@/features/owner/components/HoursCard";
@@ -46,6 +48,13 @@ export default function OwnerDashboard() {
   return (
     <Layout>
       <div className="container mx-auto p-6 space-y-6">
+        <Link to="/dashboard">
+          <Button variant="ghost" size="sm" className="mb-4">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
+        
         <AircraftHeader
           aircraft={aircraft.data}
           membership={membership.data}
