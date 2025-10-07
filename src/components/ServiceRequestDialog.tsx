@@ -271,7 +271,7 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description (Optional)</Label>
             <Textarea
               id="description"
               value={formData.description}
@@ -279,7 +279,6 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
                 setFormData({ ...formData, description: e.target.value })
               }
               placeholder="Describe the service you need..."
-              required
               rows={4}
               maxLength={1000}
             />
