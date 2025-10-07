@@ -12,10 +12,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useEffect, useMemo, useState } from "react";
+import { ServiceRequestDialog } from "@/components/ServiceRequestDialog";
+import { CreditsOverview } from "@/components/owner/CreditsOverview";
+import { FlightHoursTracker } from "@/components/owner/FlightHoursTracker";
+import { Plane, Calendar, Wrench, CreditCard, Award, PlaneTakeoff } from "lucide-react";
 
 export default function OwnerDashboard() {
   const { user } = useAuth();
-
+  
   const { data: aircraft } = useQuery({
     queryKey: ["owner-aircraft", user?.id],
     enabled: Boolean(user?.id),
@@ -26,9 +30,11 @@ export default function OwnerDashboard() {
       const { data } = await supabase
         .from("aircraft")
         .select("*")
-        .eq("owner_id", user?.id);
-      return data as any[];
-    },
+        .eq("owner_id", user?.id)
+        .limit(1)
+        .single();
+      return data;
+    }
   });
 
   const [openPrep, setOpenPrep] = useState(false);
@@ -121,27 +127,20 @@ export default function OwnerDashboard() {
 
   return (
     <Layout>
-      <div className="container mx-auto p-6 space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold mb-2">Owner Dashboard</h2>
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Header */}
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold tracking-tight">Owner Dashboard</h2>
           <p className="text-muted-foreground">Welcome back to Freedom Aviation</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">My Aircraft</CardTitle>
-              <Plane className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{aircraft?.length || 0}</div>
-              {aircraft && aircraft.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {aircraft.map((a: any) => (
-                    <p key={a.id} className="text-xs text-muted-foreground">
-                      {a.tail_number}
-                    </p>
-                  ))}
+        {/* Quick Actions - Prominent Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="border-2 hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <PlaneTakeoff className="h-6 w-6 text-primary" />
                 </div>
               )}
             </CardContent>
@@ -309,72 +308,81 @@ export default function OwnerDashboard() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Next Flight</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <CardTitle className="text-xl">Preflight Services</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Schedule fuel, fluids, and preflight preparations
+                  </p>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-muted-foreground">No upcoming flights</div>
+              <ServiceRequestDialog 
+                aircraft={aircraft ? [aircraft] : []} 
+                defaultPreflight={true}
+                buttonText="Prepare My Aircraft"
+              />
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Open Services</CardTitle>
-              <Wrench className="h-4 w-4 text-muted-foreground" />
+          <Card className="border-2 hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Wrench className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl">Other Services</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Request maintenance, detailing, and more
+                  </p>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Active service requests
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Membership</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">No active membership</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Training Status</CardTitle>
-              <Award className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">All current</div>
+              <ServiceRequestDialog aircraft={aircraft ? [aircraft] : []} />
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Status Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base font-medium">My Aircraft</CardTitle>
+              <Plane className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
-            <CardContent className="space-y-2">
-              <Button className="w-full" variant="outline">
-                Book a Flight
-              </Button>
-              <Button className="w-full" variant="outline">
-                Request Service
-              </Button>
-              <Button className="w-full" variant="outline">
-                Upload Document
-              </Button>
+            <CardContent>
+              {aircraft ? (
+                <div className="space-y-1">
+                  <div className="text-2xl font-bold">{aircraft.tail_number}</div>
+                  <p className="text-sm text-muted-foreground">{aircraft.model}</p>
+                  <p className="text-sm text-muted-foreground">Base: {aircraft.base_location}</p>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">No aircraft assigned</div>
+              )}
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base font-medium">Open Services</CardTitle>
+              <Wrench className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">No recent activity</p>
+              <div className="text-2xl font-bold">0</div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Active service requests
+              </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Activity & Credits */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <FlightHoursTracker />
+          <CreditsOverview />
         </div>
       </div>
     </Layout>

@@ -22,7 +22,7 @@ export type Database = {
           description: string | null
           id: string
           metadata: Json | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           action_type: string
@@ -31,7 +31,7 @@ export type Database = {
           description?: string | null
           id?: string
           metadata?: Json | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           action_type?: string
@@ -40,7 +40,7 @@ export type Database = {
           description?: string | null
           id?: string
           metadata?: Json | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -85,6 +85,136 @@ export type Database = {
         }
         Relationships: []
       }
+      flight_hours: {
+        Row: {
+          aircraft_id: string
+          arrival_airport: string | null
+          created_at: string | null
+          departure_airport: string | null
+          flight_date: string
+          hours_flown: number
+          id: string
+          notes: string | null
+          owner_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          aircraft_id: string
+          arrival_airport?: string | null
+          created_at?: string | null
+          departure_airport?: string | null
+          flight_date: string
+          hours_flown: number
+          id?: string
+          notes?: string | null
+          owner_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          aircraft_id?: string
+          arrival_airport?: string | null
+          created_at?: string | null
+          departure_airport?: string | null
+          flight_date?: string
+          hours_flown?: number
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flight_hours_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      membership_tiers: {
+        Row: {
+          base_price: number | null
+          created_at: string | null
+          credit_multiplier: number | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          max_hours_per_month: number | null
+          min_hours_per_month: number | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_price?: number | null
+          created_at?: string | null
+          credit_multiplier?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_hours_per_month?: number | null
+          min_hours_per_month?: number | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_price?: number | null
+          created_at?: string | null
+          credit_multiplier?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_hours_per_month?: number | null
+          min_hours_per_month?: number | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      memberships: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          owner_id: string
+          start_date: string
+          tier: string
+          tier_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          owner_id: string
+          start_date?: string
+          tier: string
+          tier_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          owner_id?: string
+          start_date?: string
+          tier?: string
+          tier_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memberships_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "membership_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -108,6 +238,162 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      service_credits: {
+        Row: {
+          created_at: string | null
+          credits_available: number | null
+          credits_used_this_period: number | null
+          id: string
+          last_reset_date: string | null
+          owner_id: string
+          service_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credits_available?: number | null
+          credits_used_this_period?: number | null
+          id?: string
+          last_reset_date?: string | null
+          owner_id: string
+          service_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credits_available?: number | null
+          credits_used_this_period?: number | null
+          id?: string
+          last_reset_date?: string | null
+          owner_id?: string
+          service_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_credits_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_requests: {
+        Row: {
+          aircraft_id: string
+          airport: string | null
+          created_at: string
+          credits_used: number | null
+          description: string
+          id: string
+          is_extra_charge: boolean | null
+          priority: string
+          service_id: string | null
+          service_type: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aircraft_id: string
+          airport?: string | null
+          created_at?: string
+          credits_used?: number | null
+          description: string
+          id?: string
+          is_extra_charge?: boolean | null
+          priority?: string
+          service_id?: string | null
+          service_type: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aircraft_id?: string
+          airport?: string | null
+          created_at?: string
+          credits_used?: number | null
+          description?: string
+          id?: string
+          is_extra_charge?: boolean | null
+          priority?: string
+          service_id?: string | null
+          service_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_requests_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          base_credits_high_activity: number | null
+          base_credits_low_activity: number | null
+          can_rollover: boolean | null
+          category: string
+          created_at: string | null
+          credits_per_period: number | null
+          credits_required: number | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_credits_high_activity?: number | null
+          base_credits_low_activity?: number | null
+          can_rollover?: boolean | null
+          category: string
+          created_at?: string | null
+          credits_per_period?: number | null
+          credits_required?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_credits_high_activity?: number | null
+          base_credits_low_activity?: number | null
+          can_rollover?: boolean | null
+          category?: string
+          created_at?: string | null
+          credits_per_period?: number | null
+          credits_required?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
           updated_at?: string | null
         }
         Relationships: []
