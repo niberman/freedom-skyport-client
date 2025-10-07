@@ -102,7 +102,7 @@ export default function OwnerDashboard() {
         status: "pending",
         user_id: user?.id,
         aircraft_id: form.aircraft_id || null,
-        airport: form.airport?.toUpperCase() || null,
+        airport: form.airport?.toUpperCase() || "KAPA",
         requested_departure: form.requested_departure || null,
         fuel_grade: form.fuel_grade || null,
         fuel_quantity: form.fuel_quantity || null,
@@ -110,7 +110,7 @@ export default function OwnerDashboard() {
         tks_topoff: form.tks_topoff,
         gpu_required: form.gpu_required,
         hangar_pullout: form.hangar_pullout,
-        description: form.description || null,
+        description: form.description || "Pre-Flight Concierge Request",
         cabin_provisioning: (() => {
           const t = form.cabin_provisioning?.trim();
           if (!t) return null;
