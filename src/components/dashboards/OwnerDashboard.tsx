@@ -63,25 +63,26 @@ export default function OwnerDashboard() {
     }
   });
 
-  const { data: openServicesCount = 0, refetch: refetchOpenServices } = useQuery({
-    queryKey: ["open-services-count", user?.id],
+  const { data: openServices = [], refetch: refetchOpenServices } = useQuery({
+    queryKey: ["open-services", user?.id],
     enabled: Boolean(user?.id),
     queryFn: async () => {
       if (!user?.id) {
-        return 0;
+        return [];
       }
       const { data, error } = await supabase
         .from("service_requests")
-        .select("id")
+        .select("*")
         .eq("user_id", user?.id)
-        .in("status", ["pending", "in_progress"]);
+        .in("status", ["pending", "in_progress"])
+        .order("created_at", { ascending: false });
       
       if (error) {
-        console.error("Error fetching open services count:", error);
-        return 0;
+        console.error("Error fetching open services:", error);
+        return [];
       }
       
-      return data?.length || 0;
+      return data || [];
     }
   });
 
@@ -588,10 +589,41 @@ export default function OwnerDashboard() {
               <Wrench className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{openServicesCount}</div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Active service requests
-              </p>
+              {openServices.length > 0 ? (
+                <div className="space-y-3">
+                  {openServices.map((service) => (
+                    <div key={service.id} className="border rounded-lg p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{service.service_type}</div>
+                          {service.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">{service.description}</p>
+                          )}
+                        </div>
+                        <Badge 
+                          variant={service.status === "pending" ? "secondary" : "default"}
+                          className="shrink-0"
+                        >
+                          {service.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        {service.airport && <span>{service.airport}</span>}
+                        {service.requested_departure && (
+                          <span>
+                            {new Date(service.requested_departure).toLocaleDateString()} {new Date(service.requested_departure).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                        {!service.requested_departure && (
+                          <span>{new Date(service.created_at).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">No open service requests</div>
+              )}
             </CardContent>
           </Card>
         </div>
