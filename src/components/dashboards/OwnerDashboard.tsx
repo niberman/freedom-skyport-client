@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
-import { Plane, Calendar, Wrench } from "lucide-react";
+import { Plane, Calendar, Wrench, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -388,10 +389,18 @@ export default function OwnerDashboard() {
             </CardHeader>
             <CardContent>
               {aircraft ? (
-                <div className="space-y-1">
-                  <div className="text-2xl font-bold">{aircraft.tail_number}</div>
-                  <p className="text-sm text-muted-foreground">{aircraft.model}</p>
-                  <p className="text-sm text-muted-foreground">Base: {aircraft.base_location}</p>
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold">{aircraft.tail_number}</div>
+                    <p className="text-sm text-muted-foreground">{aircraft.model}</p>
+                    <p className="text-sm text-muted-foreground">Base: {aircraft.base_location}</p>
+                  </div>
+                  <Link to={`/owner/${aircraft.id}`}>
+                    <Button variant="outline" size="sm" className="w-full">
+                      View Details
+                      <ExternalLink className="ml-2 h-3 w-3" />
+                    </Button>
+                  </Link>
                 </div>
               ) : (
                 <div className="text-sm text-muted-foreground">No aircraft assigned</div>

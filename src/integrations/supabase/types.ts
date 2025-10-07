@@ -132,6 +132,88 @@ export type Database = {
           },
         ]
       }
+      invoice_lines: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          invoice_id: string
+          quantity: number
+          unit_cents: number
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          invoice_id: string
+          quantity?: number
+          unit_cents: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          invoice_id?: string
+          quantity?: number
+          unit_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_lines_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          aircraft_id: string
+          created_at: string | null
+          hosted_invoice_url: string | null
+          id: string
+          owner_id: string
+          period_end: string
+          period_start: string
+          status: string
+          total_cents: number
+          updated_at: string | null
+        }
+        Insert: {
+          aircraft_id: string
+          created_at?: string | null
+          hosted_invoice_url?: string | null
+          id?: string
+          owner_id: string
+          period_end: string
+          period_start: string
+          status?: string
+          total_cents?: number
+          updated_at?: string | null
+        }
+        Update: {
+          aircraft_id?: string
+          created_at?: string | null
+          hosted_invoice_url?: string | null
+          id?: string
+          owner_id?: string
+          period_end?: string
+          period_start?: string
+          status?: string
+          total_cents?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       membership_tiers: {
         Row: {
           base_price: number | null
@@ -373,6 +455,53 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_tasks: {
+        Row: {
+          aircraft_id: string
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          photos: Json | null
+          status: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          aircraft_id: string
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          photos?: Json | null
+          status?: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          aircraft_id?: string
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          photos?: Json | null
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_tasks_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft"
             referencedColumns: ["id"]
           },
         ]

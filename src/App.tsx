@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Unauthorized from "./pages/Unauthorized";
+import OwnerDashboard from "./pages/owner/OwnerDashboard";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/owner/:aircraftId" element={<OwnerDashboard />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
           </Routes>
         </AuthProvider>
