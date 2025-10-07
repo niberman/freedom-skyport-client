@@ -116,8 +116,8 @@ export function ServiceRequestDialog({
         error
       } = await supabase.from("service_requests").insert({
         user_id: user.id,
-        aircraft_id: formData.aircraft_id,
-        service_id: formData.service_id === "custom" ? null : formData.service_id || null,
+        aircraft_id: formData.aircraft_id || null,
+        service_id: formData.service_id === "custom" || !formData.service_id ? null : formData.service_id,
         service_type: formData.service_id && formData.service_id !== "custom" ? selectedService?.name || "" : formData.service_type,
         description: finalDescription,
         priority: formData.priority,
