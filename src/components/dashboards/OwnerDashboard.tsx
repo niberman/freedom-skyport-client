@@ -58,6 +58,28 @@ export default function OwnerDashboard() {
     }
   });
 
+  const { data: openServicesCount = 0, refetch: refetchOpenServices } = useQuery({
+    queryKey: ["open-services-count", user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: async () => {
+      if (!user?.id) {
+        return 0;
+      }
+      const { data, error } = await supabase
+        .from("service_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user?.id)
+        .in("status", ["pending", "in_progress"]);
+      
+      if (error) {
+        console.error("Error fetching open services count:", error);
+        return 0;
+      }
+      
+      return data?.length || 0;
+    }
+  });
+
   // Real-time subscription for service requests
   useEffect(() => {
     if (!user?.id) return;
@@ -74,6 +96,19 @@ export default function OwnerDashboard() {
         },
         () => {
           refetchNextFlight();
+          refetchOpenServices();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'service_requests',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          refetchOpenServices();
         }
       )
       .subscribe();
@@ -81,7 +116,7 @@ export default function OwnerDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, refetchNextFlight]);
+  }, [user?.id, refetchNextFlight, refetchOpenServices]);
 
   const [openPrep, setOpenPrep] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -414,7 +449,7 @@ export default function OwnerDashboard() {
               <Wrench className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{openServicesCount}</div>
               <p className="text-sm text-muted-foreground mt-1">
                 Active service requests
               </p>
