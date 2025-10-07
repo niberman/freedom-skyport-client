@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -21,6 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ServiceRequestDialogProps {
   aircraft: Array<{ id: string; tail_number: string; base_location?: string }>;
@@ -37,6 +47,10 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
     description: "",
     priority: "medium",
     airport: singleAircraft?.base_location || "KAPA",
+    is_preflight: false,
+    flight_time: undefined as Date | undefined,
+    fuel_request: "",
+    fluid_request: "",
   });
 
   const { user } = useAuth();
@@ -92,12 +106,28 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
         ? hasEnoughCredits(formData.service_id) 
         : false;
       
+      // Build description with preflight details if applicable
+      let finalDescription = formData.description;
+      if (formData.is_preflight) {
+        const preflightDetails = [];
+        if (formData.flight_time) {
+          preflightDetails.push(`Flight Time: ${format(formData.flight_time, "PPP p")}`);
+        }
+        if (formData.fuel_request) {
+          preflightDetails.push(`Fuel: ${formData.fuel_request}`);
+        }
+        if (formData.fluid_request) {
+          preflightDetails.push(`Fluids: ${formData.fluid_request}`);
+        }
+        finalDescription = `[PREFLIGHT SERVICE]\n${preflightDetails.join('\n')}${formData.description ? '\n\nAdditional Notes:\n' + formData.description : ''}`;
+      }
+      
       const { error } = await supabase.from("service_requests").insert({
         user_id: user.id,
         aircraft_id: formData.aircraft_id,
         service_id: formData.service_id === "custom" ? null : formData.service_id || null,
         service_type: formData.service_id && formData.service_id !== "custom" ? selectedService?.name || "" : formData.service_type,
-        description: formData.description,
+        description: finalDescription,
         priority: formData.priority,
         airport: formData.airport,
         is_extra_charge: !hasCredits,
@@ -123,6 +153,10 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
         description: "",
         priority: "medium",
         airport: singleAircraft?.base_location || "KAPA",
+        is_preflight: false,
+        flight_time: undefined,
+        fuel_request: "",
+        fluid_request: "",
       });
     } catch (error: any) {
       toast({
@@ -270,15 +304,116 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
             </Select>
           </div>
 
+          <div className="flex items-center space-x-2 pt-2">
+            <Checkbox
+              id="preflight"
+              checked={formData.is_preflight}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, is_preflight: checked as boolean })
+              }
+            />
+            <Label
+              htmlFor="preflight"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              This is a preflight service request
+            </Label>
+          </div>
+
+          {formData.is_preflight && (
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+              <h4 className="font-medium text-sm">Preflight Details</h4>
+              
+              <div className="space-y-2">
+                <Label htmlFor="flight_time">Approximate Flight Time</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="flight_time"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.flight_time && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.flight_time ? (
+                        format(formData.flight_time, "PPP p")
+                      ) : (
+                        <span>Pick a date and time</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.flight_time}
+                      onSelect={(date) =>
+                        setFormData({ ...formData, flight_time: date })
+                      }
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                    <div className="p-3 border-t">
+                      <Label htmlFor="time" className="text-xs">Time (Optional)</Label>
+                      <Input
+                        id="time"
+                        type="time"
+                        onChange={(e) => {
+                          if (formData.flight_time && e.target.value) {
+                            const [hours, minutes] = e.target.value.split(':');
+                            const newDate = new Date(formData.flight_time);
+                            newDate.setHours(parseInt(hours), parseInt(minutes));
+                            setFormData({ ...formData, flight_time: newDate });
+                          }
+                        }}
+                        className="mt-1"
+                      />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fuel_request">Fuel Request</Label>
+                <Input
+                  id="fuel_request"
+                  value={formData.fuel_request}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fuel_request: e.target.value })
+                  }
+                  placeholder="e.g., Full tanks, 50 gallons, etc."
+                  maxLength={200}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fluid_request">Fluid Request (Optional)</Label>
+                <Input
+                  id="fluid_request"
+                  value={formData.fluid_request}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fluid_request: e.target.value })
+                  }
+                  placeholder="e.g., Oil check, top off all fluids, etc."
+                  maxLength={200}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
+            <Label htmlFor="description">
+              {formData.is_preflight ? "Additional Notes (Optional)" : "Description (Optional)"}
+            </Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              placeholder="Describe the service you need..."
+              placeholder={formData.is_preflight ? "Any other special requests or notes..." : "Describe the service you need..."}
               rows={4}
               maxLength={1000}
             />
