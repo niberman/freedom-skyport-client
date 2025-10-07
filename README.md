@@ -1,16 +1,8 @@
-# Welcome to your Lovable project
+# Freedom Aviation Pilot Dashboard
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/3823dc95-702f-47d4-97fd-d68500ae9691
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/3823dc95-702f-47d4-97fd-d68500ae9691) and start prompting.
 
 Changes made via Lovable will be committed automatically to this repo.
 
