@@ -85,6 +85,92 @@ export type Database = {
         }
         Relationships: []
       }
+      flight_hours: {
+        Row: {
+          aircraft_id: string
+          arrival_airport: string | null
+          created_at: string | null
+          departure_airport: string | null
+          flight_date: string
+          hours_flown: number
+          id: string
+          notes: string | null
+          owner_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          aircraft_id: string
+          arrival_airport?: string | null
+          created_at?: string | null
+          departure_airport?: string | null
+          flight_date: string
+          hours_flown: number
+          id?: string
+          notes?: string | null
+          owner_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          aircraft_id?: string
+          arrival_airport?: string | null
+          created_at?: string | null
+          departure_airport?: string | null
+          flight_date?: string
+          hours_flown?: number
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flight_hours_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      membership_tiers: {
+        Row: {
+          base_price: number | null
+          created_at: string | null
+          credit_multiplier: number | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          max_hours_per_month: number | null
+          min_hours_per_month: number | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_price?: number | null
+          created_at?: string | null
+          credit_multiplier?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_hours_per_month?: number | null
+          min_hours_per_month?: number | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_price?: number | null
+          created_at?: string | null
+          credit_multiplier?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_hours_per_month?: number | null
+          min_hours_per_month?: number | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       memberships: {
         Row: {
           active: boolean | null
@@ -94,6 +180,7 @@ export type Database = {
           owner_id: string
           start_date: string
           tier: string
+          tier_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -104,6 +191,7 @@ export type Database = {
           owner_id: string
           start_date?: string
           tier: string
+          tier_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -114,9 +202,18 @@ export type Database = {
           owner_id?: string
           start_date?: string
           tier?: string
+          tier_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "memberships_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "membership_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -258,6 +355,8 @@ export type Database = {
       }
       services: {
         Row: {
+          base_credits_high_activity: number | null
+          base_credits_low_activity: number | null
           can_rollover: boolean | null
           category: string
           created_at: string | null
@@ -270,6 +369,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          base_credits_high_activity?: number | null
+          base_credits_low_activity?: number | null
           can_rollover?: boolean | null
           category: string
           created_at?: string | null
@@ -282,6 +383,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          base_credits_high_activity?: number | null
+          base_credits_low_activity?: number | null
           can_rollover?: boolean | null
           category?: string
           created_at?: string | null

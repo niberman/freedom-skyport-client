@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/Layout";
 import { ServiceRequestDialog } from "@/components/ServiceRequestDialog";
 import { CreditsOverview } from "@/components/owner/CreditsOverview";
+import { FlightHoursTracker } from "@/components/owner/FlightHoursTracker";
 import { Plane, Calendar, Wrench, CreditCard, Award } from "lucide-react";
 export default function OwnerDashboard() {
   const {
@@ -74,6 +75,11 @@ export default function OwnerDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FlightHoursTracker />
+          <CreditsOverview />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
@@ -86,8 +92,6 @@ export default function OwnerDashboard() {
               
             </CardContent>
           </Card>
-
-          <CreditsOverview />
         </div>
       </div>
     </Layout>;
