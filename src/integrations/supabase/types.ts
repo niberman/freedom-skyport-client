@@ -115,6 +115,7 @@ export type Database = {
       service_requests: {
         Row: {
           aircraft_id: string
+          airport: string | null
           created_at: string
           description: string
           id: string
@@ -126,6 +127,7 @@ export type Database = {
         }
         Insert: {
           aircraft_id: string
+          airport?: string | null
           created_at?: string
           description: string
           id?: string
@@ -137,6 +139,7 @@ export type Database = {
         }
         Update: {
           aircraft_id?: string
+          airport?: string | null
           created_at?: string
           description?: string
           id?: string

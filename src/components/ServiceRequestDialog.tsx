@@ -23,7 +23,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 
 interface ServiceRequestDialogProps {
-  aircraft: Array<{ id: string; tail_number: string }>;
+  aircraft: Array<{ id: string; tail_number: string; base_location?: string }>;
 }
 
 export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
@@ -35,6 +35,7 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
     service_type: "",
     description: "",
     priority: "medium",
+    airport: singleAircraft?.base_location || "KAPA",
   });
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -51,6 +52,7 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
         service_type: formData.service_type,
         description: formData.description,
         priority: formData.priority,
+        airport: formData.airport,
       });
 
       if (error) throw error;
@@ -67,6 +69,7 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
         service_type: "",
         description: "",
         priority: "medium",
+        airport: singleAircraft?.base_location || "KAPA",
       });
     } catch (error: any) {
       toast({
@@ -133,6 +136,26 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
               placeholder="e.g., Annual Inspection, Oil Change"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="airport">Service Location</Label>
+            <Select
+              value={formData.airport}
+              onValueChange={(value) =>
+                setFormData({ ...formData, airport: value })
+              }
+              required
+            >
+              <SelectTrigger id="airport">
+                <SelectValue placeholder="Select airport" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="KAPA">KAPA - Centennial Airport</SelectItem>
+                <SelectItem value="BJC">BJC - Rocky Mountain Metro</SelectItem>
+                <SelectItem value="KEGE">KEGE - Eagle County</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
