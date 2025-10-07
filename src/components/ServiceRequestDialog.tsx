@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -32,11 +32,27 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
   const singleAircraft = aircraft.length === 1 ? aircraft[0] : null;
   const [formData, setFormData] = useState({
     aircraft_id: singleAircraft?.id || "",
+    service_id: "",
     service_type: "",
     description: "",
     priority: "medium",
     airport: singleAircraft?.base_location || "KAPA",
   });
+
+  const { data: services } = useQuery({
+    queryKey: ["active-services"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("services")
+        .select("*")
+        .eq("is_active", true)
+        .order("category", { ascending: true })
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -46,10 +62,13 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
 
     setLoading(true);
     try {
+      const selectedService = services?.find((s) => s.id === formData.service_id);
+      
       const { error } = await supabase.from("service_requests").insert({
         user_id: user.id,
         aircraft_id: formData.aircraft_id,
-        service_type: formData.service_type,
+        service_id: formData.service_id || null,
+        service_type: formData.service_id ? selectedService?.name || "" : formData.service_type,
         description: formData.description,
         priority: formData.priority,
         airport: formData.airport,
@@ -66,6 +85,7 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
       setOpen(false);
       setFormData({
         aircraft_id: singleAircraft?.id || "",
+        service_id: "",
         service_type: "",
         description: "",
         priority: "medium",
@@ -89,7 +109,7 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
           Request Service
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Request Service</DialogTitle>
         </DialogHeader>
@@ -126,17 +146,42 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="service_type">Service Type</Label>
-            <Input
-              id="service_type"
-              value={formData.service_type}
-              onChange={(e) =>
-                setFormData({ ...formData, service_type: e.target.value })
+            <Label htmlFor="service">Service Type</Label>
+            <Select
+              value={formData.service_id}
+              onValueChange={(value) =>
+                setFormData({ ...formData, service_id: value, service_type: "" })
               }
-              placeholder="e.g., Annual Inspection, Oil Change"
-              required
-            />
+            >
+              <SelectTrigger id="service">
+                <SelectValue placeholder="Select a service or choose custom" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="custom">Custom / Special Request</SelectItem>
+                {services?.map((service) => (
+                  <SelectItem key={service.id} value={service.id}>
+                    {service.name} ({service.category})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          {formData.service_id === "custom" && (
+            <div className="space-y-2">
+              <Label htmlFor="custom_service_type">Custom Service Type</Label>
+              <Input
+                id="custom_service_type"
+                value={formData.service_type}
+                onChange={(e) =>
+                  setFormData({ ...formData, service_type: e.target.value })
+                }
+                placeholder="Enter custom service type..."
+                required
+                maxLength={100}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="airport">Service Location</Label>
@@ -188,6 +233,7 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
               placeholder="Describe the service you need..."
               required
               rows={4}
+              maxLength={1000}
             />
           </div>
 

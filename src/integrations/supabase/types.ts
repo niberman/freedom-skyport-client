@@ -120,6 +120,7 @@ export type Database = {
           description: string
           id: string
           priority: string
+          service_id: string | null
           service_type: string
           status: string
           updated_at: string
@@ -132,6 +133,7 @@ export type Database = {
           description: string
           id?: string
           priority?: string
+          service_id?: string | null
           service_type: string
           status?: string
           updated_at?: string
@@ -144,6 +146,7 @@ export type Database = {
           description?: string
           id?: string
           priority?: string
+          service_id?: string | null
           service_type?: string
           status?: string
           updated_at?: string
@@ -158,6 +161,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "service_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "service_requests_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -165,6 +175,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      services: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
