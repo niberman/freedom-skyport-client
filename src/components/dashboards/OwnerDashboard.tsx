@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/Layout";
+import { ServiceRequestDialog } from "@/components/ServiceRequestDialog";
 import { Plane, Calendar, Wrench, CreditCard, Award } from "lucide-react";
 
 export default function OwnerDashboard() {
@@ -101,9 +102,7 @@ export default function OwnerDashboard() {
               <Button className="w-full" variant="outline">
                 Book a Flight
               </Button>
-              <Button className="w-full" variant="outline">
-                Request Service
-              </Button>
+              <ServiceRequestDialog aircraft={aircraft || []} />
               <Button className="w-full" variant="outline">
                 Upload Document
               </Button>

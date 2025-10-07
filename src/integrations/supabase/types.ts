@@ -112,6 +112,57 @@ export type Database = {
         }
         Relationships: []
       }
+      service_requests: {
+        Row: {
+          aircraft_id: string
+          created_at: string
+          description: string
+          id: string
+          priority: string
+          service_type: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aircraft_id: string
+          created_at?: string
+          description: string
+          id?: string
+          priority?: string
+          service_type: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aircraft_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          priority?: string
+          service_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_requests_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
