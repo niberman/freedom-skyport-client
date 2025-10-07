@@ -87,7 +87,11 @@ export default function OwnerDashboard() {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <QuickActions aircraftId={aircraftId!} userId={user!.id} />
+          <QuickActions 
+            aircraftId={aircraftId!} 
+            userId={user!.id}
+            aircraftData={aircraft.data || undefined}
+          />
           <BillingCard
             invoices={invoices.data || []}
             isLoading={invoices.isLoading}
