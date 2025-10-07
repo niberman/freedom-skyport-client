@@ -79,16 +79,14 @@ export default function OwnerDashboard() {
           <CreditsOverview />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            
-            <CardContent className="space-y-2">
-              
-              <ServiceRequestDialog aircraft={aircraft ? [aircraft] : []} />
-              
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Request Service</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ServiceRequestDialog aircraft={aircraft ? [aircraft] : []} />
+          </CardContent>
+        </Card>
       </div>
     </Layout>;
 }
