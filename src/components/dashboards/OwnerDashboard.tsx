@@ -67,7 +67,7 @@ export default function OwnerDashboard() {
   // Optional: dynamic fuel grades from a Lovable-editable lookup
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("lookup_fuel_grades")
         .select("grade")
         .eq("active", true)
@@ -95,7 +95,7 @@ export default function OwnerDashboard() {
         })(),
         airport: form.airport?.toUpperCase() || null,
       };
-      const { error } = await supabase.from("service_requests").insert(payload);
+      const { error } = await (supabase as any).from("service_requests").insert(payload);
       if (error) throw error;
       setOpenPrep(false);
       setForm({
