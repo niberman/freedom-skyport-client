@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/Layout";
-import { Plane, Calendar, Wrench, CreditCard, Award } from "lucide-react";
+import { Plane, Calendar, Wrench } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -55,15 +55,40 @@ export default function OwnerDashboard() {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  const selectedAircraft = useMemo(
-    () => (aircraft ? [aircraft] : []).find((a: any) => a.id === form.aircraft_id),
-    [aircraft, form.aircraft_id]
-  );
+  const selectedAircraft = useMemo(() => {
+    if (!aircraft) return null;
+    return form.aircraft_id === String(aircraft.id) ? aircraft : null;
+  }, [aircraft, form.aircraft_id]);
 
   useEffect(() => {
-    if (selectedAircraft?.base_location && !form.airport) {
-      setForm(f => ({ ...f, airport: (selectedAircraft.base_location || "").toUpperCase() }));
-    }
+    if (!aircraft?.id) return;
+    setForm((f) => {
+      const next: typeof f = { ...f };
+      let changed = false;
+
+      if (!f.aircraft_id) {
+        next.aircraft_id = String(aircraft.id);
+        changed = true;
+      }
+
+      if (!f.airport && aircraft.base_location) {
+        next.airport = aircraft.base_location.toUpperCase();
+        changed = true;
+      }
+
+      return changed ? next : f;
+    });
+  }, [aircraft]);
+
+  useEffect(() => {
+    if (!selectedAircraft?.base_location) return;
+    setForm((f) => {
+      if (f.airport) return f;
+      return {
+        ...f,
+        airport: (selectedAircraft.base_location || "").toUpperCase(),
+      };
+    });
   }, [selectedAircraft]);
 
   useEffect(() => {
@@ -78,6 +103,14 @@ export default function OwnerDashboard() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!fuelGrades.length) return;
+    setForm((f) => {
+      if (fuelGrades.includes(f.fuel_grade)) return f;
+      return { ...f, fuel_grade: fuelGrades[0] };
+    });
+  }, [fuelGrades]);
 
   async function submitPrepareRequest(e: React.FormEvent) {
     e.preventDefault();
@@ -153,7 +186,7 @@ export default function OwnerDashboard() {
                           </SelectTrigger>
                           <SelectContent>
                             {aircraft ? (
-                              <SelectItem value={aircraft.id}>{aircraft.tail_number}</SelectItem>
+                              <SelectItem value={String(aircraft.id)}>{aircraft.tail_number}</SelectItem>
                             ) : (
                               <SelectItem value="">(No aircraft found)</SelectItem>
                             )}
@@ -291,7 +324,7 @@ export default function OwnerDashboard() {
                 </p>
               </div>
               <ServiceRequestDialog 
-                aircraft={aircraft ? [aircraft] : []} 
+                aircraft={aircraft ? [{ ...aircraft, id: String(aircraft.id) }] : []} 
                 defaultPreflight={true}
                 buttonText="Prepare My Aircraft"
               />
