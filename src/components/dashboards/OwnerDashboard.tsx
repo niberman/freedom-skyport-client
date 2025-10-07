@@ -16,8 +16,10 @@ export default function OwnerDashboard() {
       const { data } = await supabase
         .from("aircraft")
         .select("*")
-        .eq("owner_id", user?.id);
-      return data as any[];
+        .eq("owner_id", user?.id)
+        .limit(1)
+        .single();
+      return data;
     },
   });
 
@@ -36,15 +38,18 @@ export default function OwnerDashboard() {
               <Plane className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{aircraft?.length || 0}</div>
-              {aircraft && aircraft.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {aircraft.map((a: any) => (
-                    <p key={a.id} className="text-xs text-muted-foreground">
-                      {a.tail_number}
-                    </p>
-                  ))}
+              {aircraft ? (
+                <div>
+                  <div className="text-2xl font-bold">{aircraft.tail_number}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {aircraft.model}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Base: {aircraft.base_location}
+                  </p>
                 </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">No aircraft assigned</div>
               )}
             </CardContent>
           </Card>
@@ -102,7 +107,7 @@ export default function OwnerDashboard() {
               <Button className="w-full" variant="outline">
                 Book a Flight
               </Button>
-              <ServiceRequestDialog aircraft={aircraft || []} />
+              <ServiceRequestDialog aircraft={aircraft ? [aircraft] : []} />
               <Button className="w-full" variant="outline">
                 Upload Document
               </Button>

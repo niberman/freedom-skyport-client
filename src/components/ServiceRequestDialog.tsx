@@ -29,8 +29,9 @@ interface ServiceRequestDialogProps {
 export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const singleAircraft = aircraft.length === 1 ? aircraft[0] : null;
   const [formData, setFormData] = useState({
-    aircraft_id: "",
+    aircraft_id: singleAircraft?.id || "",
     service_type: "",
     description: "",
     priority: "medium",
@@ -62,7 +63,7 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
       queryClient.invalidateQueries({ queryKey: ["service-requests"] });
       setOpen(false);
       setFormData({
-        aircraft_id: "",
+        aircraft_id: singleAircraft?.id || "",
         service_type: "",
         description: "",
         priority: "medium",
@@ -90,27 +91,36 @@ export function ServiceRequestDialog({ aircraft }: ServiceRequestDialogProps) {
           <DialogTitle>Request Service</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="aircraft">Aircraft</Label>
-            <Select
-              value={formData.aircraft_id}
-              onValueChange={(value) =>
-                setFormData({ ...formData, aircraft_id: value })
-              }
-              required
-            >
-              <SelectTrigger id="aircraft">
-                <SelectValue placeholder="Select aircraft" />
-              </SelectTrigger>
-              <SelectContent>
-                {aircraft.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.tail_number}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {singleAircraft ? (
+            <div className="space-y-2">
+              <Label>Aircraft</Label>
+              <div className="text-sm font-medium px-3 py-2 bg-muted rounded-md">
+                {singleAircraft.tail_number}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="aircraft">Aircraft</Label>
+              <Select
+                value={formData.aircraft_id}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, aircraft_id: value })
+                }
+                required
+              >
+                <SelectTrigger id="aircraft">
+                  <SelectValue placeholder="Select aircraft" />
+                </SelectTrigger>
+                <SelectContent>
+                  {aircraft.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.tail_number}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="service_type">Service Type</Label>
