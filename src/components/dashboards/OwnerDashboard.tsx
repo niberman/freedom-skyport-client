@@ -81,7 +81,7 @@ export default function OwnerDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Request Service</CardTitle>
+            <CardTitle>Services</CardTitle>
           </CardHeader>
           <CardContent>
             <ServiceRequestDialog aircraft={aircraft ? [aircraft] : []} />
