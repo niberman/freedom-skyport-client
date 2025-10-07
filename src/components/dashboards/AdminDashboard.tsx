@@ -22,10 +22,7 @@ export default function AdminDashboard() {
       const [aircraftRes, ownerRes, serviceRes] = await Promise.all([
         supabase.from("aircraft").select("*", { count: "exact", head: true }),
         supabase.from("profiles").select("*", { count: "exact", head: true }),
-        (supabase as any)
-          .from("service_requests")
-          .select("*", { count: "exact", head: true })
-          .eq("status", "open"),
+        supabase.from("service_requests").select("*", { count: "exact", head: true }).neq("status", "completed"),
       ]);
 
       const errors = [aircraftRes.error, ownerRes.error, serviceRes.error].filter(Boolean);
@@ -46,8 +43,17 @@ export default function AdminDashboard() {
     },
     staleTime: 60_000,
     refetchOnWindowFocus: false,
+    onError: (error) => {
+      console.error("[AdminDashboard] count fetch error", error);
+    },
   });
 
+import { Plane, Users, Wrench, Settings } from "lucide-react";
+import { ServicesManagement } from "@/components/admin/ServicesManagement";
+import { FlightHoursManagement } from "@/components/admin/FlightHoursManagement";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+export default function AdminDashboard() {
   return (
     <Layout>
       <div className="container mx-auto p-6 space-y-6">
@@ -63,7 +69,7 @@ export default function AdminDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts?.aircraft ?? 0}</div>
+              <div className="text-2xl font-bold">{counts.aircraft}</div>
             </CardContent>
           </Card>
 
@@ -73,7 +79,7 @@ export default function AdminDashboard() {
               <Plane className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts?.owners ?? 0}</div>
+              <div className="text-2xl font-bold">{counts.owners}</div>
             </CardContent>
           </Card>
 
@@ -83,7 +89,7 @@ export default function AdminDashboard() {
               <Wrench className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts?.upcomingFlights ?? 0}</div>
+              <div className="text-2xl font-bold">{counts.upcomingFlights}</div>
             </CardContent>
           </Card>
 
@@ -93,7 +99,7 @@ export default function AdminDashboard() {
               <Settings className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{counts?.openServices ?? 0}</div>
+              <div className="text-2xl font-bold">{counts.openServices}</div>
               <div className="text-sm text-green-600">Operational</div>
             </CardContent>
           </Card>
@@ -149,8 +155,6 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-        </div>
-
         <Tabs defaultValue="services" className="space-y-4">
           <TabsList>
             <TabsTrigger value="services">Service Options</TabsTrigger>
@@ -159,36 +163,37 @@ export default function AdminDashboard() {
             <TabsTrigger value="aircraft">Aircraft</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="services">
-            <ServicesManagement />
-          </TabsContent>
+            <TabsContent value="services">
+              <ServicesManagement />
+            </TabsContent>
 
-          <TabsContent value="flight-hours">
-            <FlightHoursManagement />
-          </TabsContent>
+            <TabsContent value="flight-hours">
+              <FlightHoursManagement />
+            </TabsContent>
 
-          <TabsContent value="requests">
-            <Card>
-              <CardHeader>
-                <CardTitle>Service Requests</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">Service requests management coming soon...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="requests">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Service Requests</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Service requests management coming soon...</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="aircraft">
-            <Card>
-              <CardHeader>
-                <CardTitle>Aircraft Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">Aircraft management coming soon...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="aircraft">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Aircraft Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Aircraft management coming soon...</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </Layout>
   );

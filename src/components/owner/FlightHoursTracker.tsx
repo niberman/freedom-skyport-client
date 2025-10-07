@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -115,9 +115,18 @@ export function FlightHoursTracker() {
     },
   });
 
+  useEffect(() => {
+    if (aircraft?.id) {
+      setFormData((current) => ({
+        ...current,
+        aircraft_id: String(aircraft.id),
+      }));
+    }
+  }, [aircraft]);
+
   const resetForm = () => {
     setFormData({
-      aircraft_id: aircraft?.id || "",
+      aircraft_id: aircraft?.id ? String(aircraft.id) : "",
       flight_date: format(new Date(), "yyyy-MM-dd"),
       hours_flown: "",
       departure_airport: "",
@@ -128,7 +137,10 @@ export function FlightHoursTracker() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate(formData);
+    createMutation.mutate({
+      ...formData,
+      aircraft_id: formData.aircraft_id || (aircraft?.id ? String(aircraft.id) : null),
+    });
   };
 
   return (
