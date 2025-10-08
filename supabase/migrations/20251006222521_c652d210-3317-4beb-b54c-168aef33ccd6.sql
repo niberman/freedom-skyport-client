@@ -28,6 +28,8 @@ CREATE TABLE public.aircraft (
   owner_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   base_location TEXT DEFAULT 'KAPA',
   status TEXT DEFAULT 'active',
+  hobbs_time NUMERIC,
+  tach_time NUMERIC,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -73,6 +75,13 @@ CREATE POLICY "Users can update their own profile"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
 
+CREATE POLICY "System can create profiles"
+  ON public.profiles FOR INSERT
+  WITH CHECK (
+    auth.uid() = id
+    OR auth.uid() IS NULL
+  );
+
 CREATE POLICY "Admins can view all profiles"
   ON public.profiles FOR SELECT
   USING (public.has_role(auth.uid(), 'admin'));
@@ -81,6 +90,13 @@ CREATE POLICY "Admins can view all profiles"
 CREATE POLICY "Users can view their own roles"
   ON public.user_roles FOR SELECT
   USING (auth.uid() = user_id);
+
+CREATE POLICY "System can assign default roles"
+  ON public.user_roles FOR INSERT
+  WITH CHECK (
+    auth.uid() = user_id
+    OR auth.uid() IS NULL
+  );
 
 CREATE POLICY "Admins can manage all roles"
   ON public.user_roles FOR ALL

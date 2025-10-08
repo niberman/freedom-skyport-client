@@ -1,3 +1,10 @@
+import * as ReactQuery from "@tanstack/react-query";
+
+const queryClient = new ReactQuery.QueryClient();
+
+<ReactQuery.QueryClientProvider client={queryClient}>
+  {/* other components */}
+</ReactQuery.QueryClientProvider>
 -- Create service_requests table
 CREATE TABLE public.service_requests (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,

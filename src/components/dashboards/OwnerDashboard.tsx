@@ -220,6 +220,19 @@ export default function OwnerDashboard() {
   const readinessStatus = hasOpenTask ? "Needs Service" : "Ready";
   const readinessVariant = hasOpenTask ? "destructive" : "default";
 
+  const formatHours = (value: number | string | null | undefined) => {
+    if (value === null || value === undefined) {
+      return "N/A";
+    }
+
+    const numericValue = typeof value === "number" ? value : Number(value);
+    if (Number.isNaN(numericValue)) {
+      return "N/A";
+    }
+
+    return `${numericValue.toFixed(1)} hrs`;
+  };
+
   return (
     <Layout>
       <div className="container mx-auto p-6 space-y-6">
@@ -245,16 +258,12 @@ export default function OwnerDashboard() {
 
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Hobbs Time</p>
-                    <p className="text-xl font-semibold">
-                      {aircraft.hobbs_time ? `${aircraft.hobbs_time.toFixed(1)} hrs` : 'N/A'}
-                    </p>
+                    <p className="text-xl font-semibold">{formatHours(aircraft.hobbs_time)}</p>
                   </div>
 
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Tach Time</p>
-                    <p className="text-xl font-semibold">
-                      {aircraft.tach_time ? `${aircraft.tach_time.toFixed(1)} hrs` : 'N/A'}
-                    </p>
+                    <p className="text-xl font-semibold">{formatHours(aircraft.tach_time)}</p>
                   </div>
                 </div>
 
