@@ -13,10 +13,16 @@ import {
   ServiceTask,
   ActivityLog,
   Invoice,
-  InvoiceLine
+  InvoiceLine,
+  User,
+  UpsertUser
 } from "@shared/schema";
 
 export interface IStorage {
+  // Replit Auth User operations (required for authentication)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
   // Profiles
   getProfile(id: string): Promise<Profile | undefined>;
   createProfile(profile: InsertProfile): Promise<Profile>;
@@ -83,6 +89,7 @@ export interface IStorage {
 // Database storage implementation using Drizzle
 import { db } from "./db";
 import { 
+  users,
   profiles, 
   userRoles, 
   aircraft, 
@@ -98,6 +105,27 @@ import {
 import { eq, and } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
+  // Replit Auth User operations (required for authentication)
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
   // Profiles
   async getProfile(id: string): Promise<Profile | undefined> {
     const [profile] = await db.select().from(profiles).where(eq(profiles.id, id));

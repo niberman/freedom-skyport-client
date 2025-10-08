@@ -1,9 +1,31 @@
-import { pgTable, uuid, text, timestamp, boolean, jsonb, integer, numeric, date, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, boolean, jsonb, integer, numeric, date, pgEnum, varchar, index } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const appRoleEnum = pgEnum("app_role", ["owner", "admin"]);
+
+// Replit Auth tables (required for authentication)
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
@@ -185,3 +207,7 @@ export type InvoiceLine = typeof invoiceLines.$inferSelect;
 export type MembershipTier = typeof membershipTiers.$inferSelect;
 export type ServiceTask = typeof serviceTasks.$inferSelect;
 export type ActivityLog = typeof activityLogs.$inferSelect;
+
+// Replit Auth types
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
