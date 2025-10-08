@@ -62,9 +62,7 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-primary/10 rounded-full">
-              <Plane className="h-8 w-8 text-primary" />
-            </div>
+            <img src="/logo.png" alt="Freedom Aviation Logo" className="h-16 w-auto" />
           </div>
           <CardTitle className="text-2xl">Freedom Aviation</CardTitle>
           <CardDescription>
