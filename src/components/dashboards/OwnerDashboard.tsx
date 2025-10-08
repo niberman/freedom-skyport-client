@@ -3,10 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
-import { Plane, Calendar, Wrench, CreditCard, Award } from "lucide-react";
+import { Plane, PlaneTakeoff, Calendar, Wrench, CreditCard, Award } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -57,10 +58,14 @@ export default function OwnerDashboard() {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  const selectedAircraft = useMemo(
-    () => (aircraft || []).find((a: any) => a.id === form.aircraft_id),
-    [aircraft, form.aircraft_id]
-  );
+  const selectedAircraft = useMemo(() => {
+    if (!aircraft) return undefined;
+    if (Array.isArray(aircraft)) {
+      return aircraft.find((a: any) => a.id === form.aircraft_id);
+    }
+    // aircraft is a single object
+    return (aircraft as any).id === form.aircraft_id ? aircraft : undefined;
+  }, [aircraft, form.aircraft_id]);
 
   useEffect(() => {
     if (selectedAircraft?.base_location && !form.airport) {
@@ -123,6 +128,25 @@ export default function OwnerDashboard() {
     }
   }
 
+  const normalizedAircraft = useMemo(() => {
+    if (!aircraft) return [];
+    // If aircraft query returned an array, map each entry
+    if (Array.isArray(aircraft)) {
+      return aircraft.map((a: any) => ({
+        id: String(a.id),
+        tail_number: a.tail_number ?? a.tail ?? String(a.id),
+        base_location: a.base_location ?? a.baseLocation ?? undefined,
+      }));
+    }
+    // Single object case
+    const a = aircraft as any;
+    return [{
+      id: String(a.id),
+      tail_number: a.tail_number ?? a.tail ?? String(a.id),
+      base_location: a.base_location ?? a.baseLocation ?? undefined,
+    }];
+  }, [aircraft]);
+
   return (
     <Layout>
       <div className="container mx-auto p-6 space-y-8">
@@ -138,7 +162,14 @@ export default function OwnerDashboard() {
                 <div className="p-2 bg-primary/10 rounded-lg">
                   <PlaneTakeoff className="h-6 w-6 text-primary" />
                 </div>
-              )}
+                <div>
+                  <CardTitle className="text-xl">Flight Ready</CardTitle>
+                  <p className="text-sm text-muted-foreground">Status and quick actions</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {/* Add any body content here if needed */}
             </CardContent>
           </Card>
 
@@ -163,15 +194,15 @@ export default function OwnerDashboard() {
                   onValueChange={(v) => updateForm("aircraft_id", v)}
                 >
                   <SelectTrigger id="aircraft">
-                    <SelectValue placeholder={(aircraft || []).length ? "Select aircraft" : "No aircraft available"} />
+                    <SelectValue placeholder={normalizedAircraft.length ? "Select aircraft" : "No aircraft available"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {(aircraft || []).map((a: any) => (
+                    {normalizedAircraft.map((a: any) => (
                       <SelectItem key={a.id} value={a.id}>
                         {a.tail_number}
                       </SelectItem>
                     ))}
-                    {!(aircraft || []).length && (
+                    {!normalizedAircraft.length && (
                       <SelectItem value="">
                         (No aircraft found)
                       </SelectItem>
@@ -293,17 +324,18 @@ export default function OwnerDashboard() {
         </DialogContent>
       </Dialog>
     </CardHeader>
-    <CardContent>
-      <p className="text-sm text-muted-foreground">
-        Tell us when you plan to fly and what you need—we’ll ready your aircraft.
-      </p>
-    </CardContent>
-  </Card>
-
+            <CardContent>
+              <ServiceRequestDialog
+                aircraft={normalizedAircraft}
+                defaultPreflight={true}
+                buttonText="Prepare My Aircraft"
+              />
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Next Flight</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-3">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <CardTitle className="text-xl">Preflight Services</CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -314,7 +346,7 @@ export default function OwnerDashboard() {
             </CardHeader>
             <CardContent>
               <ServiceRequestDialog 
-                aircraft={aircraft ? [{ ...aircraft, id: String(aircraft.id) }] : []} 
+                aircraft={normalizedAircraft} 
                 defaultPreflight={true}
                 buttonText="Prepare My Aircraft"
               />
@@ -330,11 +362,21 @@ export default function OwnerDashboard() {
             </CardHeader>
             <CardContent>
               {aircraft ? (
-                <div className="space-y-1">
-                  <div className="text-2xl font-bold">{aircraft.tail_number}</div>
-                  <p className="text-sm text-muted-foreground">{aircraft.model}</p>
-                  <p className="text-sm text-muted-foreground">Base: {aircraft.base_location}</p>
-                </div>
+                Array.isArray(aircraft) && aircraft.length > 0 ? (
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold">{aircraft[0].tail_number}</div>
+                    <p className="text-sm text-muted-foreground">{aircraft[0].model}</p>
+                    <p className="text-sm text-muted-foreground">Base: {aircraft[0].base_location}</p>
+                  </div>
+                ) : !Array.isArray(aircraft) ? (
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold">{aircraft.tail_number}</div>
+                    <p className="text-sm text-muted-foreground">{aircraft.model}</p>
+                    <p className="text-sm text-muted-foreground">Base: {aircraft.base_location}</p>
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">No aircraft assigned</div>
+                )
               ) : (
                 <div className="text-sm text-muted-foreground">No aircraft assigned</div>
               )}
