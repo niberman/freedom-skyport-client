@@ -266,31 +266,6 @@ export default function OwnerDashboard() {
                     {readinessStatus}
                   </Badge>
                 </div>
-
-                {nextFlight && (
-                  <div className="pt-3 border-t">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm font-medium">Next Flight</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-lg font-semibold">
-                        {new Date(nextFlight.requested_departure).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(nextFlight.requested_departure).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })} • {nextFlight.airport}
-                      </p>
-                      {nextFlight.fuel_quantity && (
-                        <p className="text-xs text-muted-foreground">
-                          {nextFlight.fuel_grade}: {nextFlight.fuel_quantity} gal
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             ) : (
               <div className="text-sm text-muted-foreground">No aircraft assigned</div>
