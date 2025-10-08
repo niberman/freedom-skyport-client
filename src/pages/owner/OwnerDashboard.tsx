@@ -37,7 +37,7 @@ export default function OwnerDashboard() {
         .select("*")
         .eq("user_id", user.id)
         .eq("aircraft_id", aircraftId)
-        .order("created_at", { ascending: false })
+        .order("requested_departure", { ascending: true, nullsFirst: false })
         .limit(20);
       
       if (error) {
@@ -92,17 +92,17 @@ export default function OwnerDashboard() {
             userId={user!.id}
             aircraftData={aircraft.data || undefined}
           />
-          <BillingCard
-            invoices={invoices.data || []}
-            isLoading={invoices.isLoading}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ServiceTimeline
             tasks={serviceTasks.data || []}
             requests={serviceRequests}
             isLoading={serviceTasks.isLoading}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <BillingCard
+            invoices={invoices.data || []}
+            isLoading={invoices.isLoading}
           />
           <DocsCard />
         </div>
