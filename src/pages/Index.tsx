@@ -9,7 +9,7 @@ const Index = () => {
         <div className="text-center mb-16">
           <div className="flex justify-center mb-6">
             <img
-              src="https://storage.googleapis.com/gpt-engineer-file-uploads/IpqYjiQoApct98b0kk7EtZ5ZRvi1/uploads/1759857305366-Screenshot 2025-09-19 at 10.34.45 AM.png"
+              src="/logo.png"
               alt="Freedom Aviation Logo"
               className="h-32 w-auto"
             />
