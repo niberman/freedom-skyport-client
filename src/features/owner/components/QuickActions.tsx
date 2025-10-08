@@ -202,12 +202,13 @@ export function QuickActions({ aircraftId, userId, aircraftData }: QuickActionsP
               {/* Departure & Fuel */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="prep_departure">Requested Departure</Label>
+                  <Label htmlFor="prep_departure">Requested Departure *</Label>
                   <Input
                     id="prep_departure"
                     type="datetime-local"
                     value={prepForm.requested_departure}
                     onChange={(e) => setPrepForm({ ...prepForm, requested_departure: e.target.value })}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
