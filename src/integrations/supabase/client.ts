@@ -18,3 +18,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   },
 });
+// in src/integrations/supabase/client.tsx (or .ts)
+console.info(
+  "[Supabase]",
+  import.meta.env.VITE_SUPABASE_URL || "NO_ENV_URL",
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ? "ENV_KEY" : "NO_ENV_KEY",
+);
