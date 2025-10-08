@@ -220,27 +220,43 @@ export default function OwnerDashboard() {
 
   return (
     <Layout>
-      <div className="container mx-auto p-6 space-y-8">
+      <div className="container mx-auto p-6 space-y-6">
         <div className="space-y-1">
           <h2 className="text-3xl font-bold tracking-tight">Owner Dashboard</h2>
           <p className="text-muted-foreground">Welcome back to Freedom Aviation</p>
         </div>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-base font-medium">My Aircraft</CardTitle>
             <Plane className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {aircraft ? (
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="text-2xl font-bold">{aircraft.tail_number}</div>
-                  <p className="text-sm text-muted-foreground">{aircraft.model}</p>
-                  <p className="text-sm text-muted-foreground">Base: {aircraft.base_location}</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold">{aircraft.tail_number}</div>
+                    <p className="text-sm text-muted-foreground">{aircraft.model}</p>
+                    <p className="text-xs text-muted-foreground">Base: {aircraft.base_location}</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Hobbs Time</p>
+                    <p className="text-xl font-semibold">
+                      {aircraft.hobbs_time ? `${aircraft.hobbs_time.toFixed(1)} hrs` : 'N/A'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Tach Time</p>
+                    <p className="text-xl font-semibold">
+                      {aircraft.tach_time ? `${aircraft.tach_time.toFixed(1)} hrs` : 'N/A'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 pt-2 border-t">
                   {membership && (
                     <Badge variant="secondary">
                       {membership.tier}
@@ -251,23 +267,8 @@ export default function OwnerDashboard() {
                   </Badge>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Hobbs Time</p>
-                    <p className="text-lg font-semibold">
-                      {aircraft.hobbs_time ? `${aircraft.hobbs_time.toFixed(1)} hrs` : 'N/A'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Tach Time</p>
-                    <p className="text-lg font-semibold">
-                      {aircraft.tach_time ? `${aircraft.tach_time.toFixed(1)} hrs` : 'N/A'}
-                    </p>
-                  </div>
-                </div>
-
                 {nextFlight && (
-                  <div className="pt-2 border-t">
+                  <div className="pt-3 border-t">
                     <div className="flex items-center gap-2 mb-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <p className="text-sm font-medium">Next Flight</p>
@@ -317,9 +318,7 @@ export default function OwnerDashboard() {
           <DocsCard />
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
-          <CreditsOverview />
-        </div>
+        <CreditsOverview />
       </div>
     </Layout>
   );

@@ -112,8 +112,10 @@ export function QuickActions({ aircraftId, userId, aircraftData }: QuickActionsP
         description: "",
       });
       
+      // Invalidate all relevant queries including next-flight
       queryClient.invalidateQueries({ queryKey: ["service-requests"] });
       queryClient.invalidateQueries({ queryKey: ["service-tasks", aircraftId] });
+      queryClient.invalidateQueries({ queryKey: ["next-flight", userId] });
     } catch (error) {
       console.error("Error submitting pre-flight request:", error);
       toast.error("Failed to submit pre-flight request");
@@ -148,6 +150,7 @@ export function QuickActions({ aircraftId, userId, aircraftData }: QuickActionsP
       });
       
       queryClient.invalidateQueries({ queryKey: ["service-tasks", aircraftId] });
+      queryClient.invalidateQueries({ queryKey: ["service-requests"] });
     } catch (error) {
       console.error("Error requesting service:", error);
       toast.error("Failed to submit service request");
