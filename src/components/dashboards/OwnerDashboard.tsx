@@ -226,39 +226,6 @@ export default function OwnerDashboard() {
           <p className="text-muted-foreground">Welcome back to Freedom Aviation</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Next Flight</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {nextFlight ? (
-                <div className="space-y-1">
-                  <div className="text-2xl font-bold">
-                    {new Date(nextFlight.requested_departure).toLocaleDateString()}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(nextFlight.requested_departure).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{nextFlight.airport}</p>
-                  {nextFlight.fuel_quantity && (
-                    <p className="text-xs text-muted-foreground">
-                      {nextFlight.fuel_grade}: {nextFlight.fuel_quantity} gal
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">No upcoming flights</div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base font-medium">My Aircraft</CardTitle>
@@ -266,13 +233,14 @@ export default function OwnerDashboard() {
           </CardHeader>
           <CardContent>
             {aircraft ? (
-              <div className="space-y-2">
-                <div className="space-y-1">
+              <div className="space-y-4">
+                <div className="space-y-2">
                   <div className="text-2xl font-bold">{aircraft.tail_number}</div>
                   <p className="text-sm text-muted-foreground">{aircraft.model}</p>
                   <p className="text-sm text-muted-foreground">Base: {aircraft.base_location}</p>
                 </div>
-                <div className="flex flex-wrap gap-2 mt-2">
+
+                <div className="flex flex-wrap gap-2">
                   {membership && (
                     <Badge variant="secondary">
                       {membership.tier}
@@ -282,6 +250,46 @@ export default function OwnerDashboard() {
                     {readinessStatus}
                   </Badge>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Hobbs Time</p>
+                    <p className="text-lg font-semibold">
+                      {aircraft.hobbs_time ? `${aircraft.hobbs_time.toFixed(1)} hrs` : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Tach Time</p>
+                    <p className="text-lg font-semibold">
+                      {aircraft.tach_time ? `${aircraft.tach_time.toFixed(1)} hrs` : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+
+                {nextFlight && (
+                  <div className="pt-2 border-t">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium">Next Flight</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-lg font-semibold">
+                        {new Date(nextFlight.requested_departure).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(nextFlight.requested_departure).toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })} • {nextFlight.airport}
+                      </p>
+                      {nextFlight.fuel_quantity && (
+                        <p className="text-xs text-muted-foreground">
+                          {nextFlight.fuel_grade}: {nextFlight.fuel_quantity} gal
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-sm text-muted-foreground">No aircraft assigned</div>

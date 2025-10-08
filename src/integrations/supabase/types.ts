@@ -56,30 +56,36 @@ export type Database = {
         Row: {
           base_location: string | null
           created_at: string | null
+          hobbs_time: number | null
           id: string
           model: string
           owner_id: string | null
           status: string | null
+          tach_time: number | null
           tail_number: string
           updated_at: string | null
         }
         Insert: {
           base_location?: string | null
           created_at?: string | null
+          hobbs_time?: number | null
           id?: string
           model: string
           owner_id?: string | null
           status?: string | null
+          tach_time?: number | null
           tail_number: string
           updated_at?: string | null
         }
         Update: {
           base_location?: string | null
           created_at?: string | null
+          hobbs_time?: number | null
           id?: string
           model?: string
           owner_id?: string | null
           status?: string | null
+          tach_time?: number | null
           tail_number?: string
           updated_at?: string | null
         }

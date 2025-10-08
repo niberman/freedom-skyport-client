@@ -6,6 +6,8 @@ export interface Aircraft {
   status: string | null;
   owner_id: string | null;
   make?: string | null;
+  hobbs_time?: number | null;
+  tach_time?: number | null;
 }
 
 export interface ServiceTask {
