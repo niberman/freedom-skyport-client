@@ -1,5 +1,7 @@
 import type { Express } from "express";
+import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { 
   insertAircraftSchema, 
   insertServiceRequestSchema,
@@ -7,7 +9,22 @@ import {
   insertMembershipSchema 
 } from "@shared/schema";
 
-export function registerRoutes(app: Express) {
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup Replit Auth
+  await setupAuth(app);
+
+  // Auth route - get current user
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
   // Profiles
   app.get("/api/profiles/:id", async (req, res) => {
     const profile = await storage.getProfile(req.params.id);
@@ -286,4 +303,7 @@ export function registerRoutes(app: Express) {
     const line = await storage.createInvoiceLine(req.body);
     res.status(201).json(line);
   });
+
+  const httpServer = createServer(app);
+  return httpServer;
 }
