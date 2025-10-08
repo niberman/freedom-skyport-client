@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import logo from "@/assets/freedom-aviation-logo.png";
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -62,7 +61,7 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <img src={logo} alt="Freedom Aviation Logo" className="h-16 w-auto" />
+            <img src="/logo.png" alt="Freedom Aviation Logo" className="h-16 w-auto" />
           </div>
           <CardTitle className="text-2xl">Freedom Aviation</CardTitle>
           <CardDescription>
