@@ -112,10 +112,16 @@ export function QuickActions({ aircraftId, userId, aircraftData }: QuickActionsP
         description: "",
       });
       
-      // Invalidate all relevant queries including next-flight
-      queryClient.invalidateQueries({ queryKey: ["service-requests"] });
-      queryClient.invalidateQueries({ queryKey: ["service-tasks", aircraftId] });
-      queryClient.invalidateQueries({ queryKey: ["next-flight", userId] });
+      // Invalidate all relevant queries using predicate to match all variations
+      await queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "service-requests"
+      });
+      await queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "service-tasks"
+      });
+      await queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "next-flight"
+      });
     } catch (error) {
       console.error("Error submitting pre-flight request:", error);
       toast.error("Failed to submit pre-flight request");
@@ -149,8 +155,13 @@ export function QuickActions({ aircraftId, userId, aircraftData }: QuickActionsP
         requested_for: "",
       });
       
-      queryClient.invalidateQueries({ queryKey: ["service-tasks", aircraftId] });
-      queryClient.invalidateQueries({ queryKey: ["service-requests"] });
+      // Invalidate all relevant queries using predicate
+      await queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "service-requests"
+      });
+      await queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "service-tasks"
+      });
     } catch (error) {
       console.error("Error requesting service:", error);
       toast.error("Failed to submit service request");

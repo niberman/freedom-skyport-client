@@ -130,11 +130,19 @@ export function ServiceRequestDialog({
         title: "Service request submitted",
         description: defaultPreflight ? "Your preflight request has been submitted." : hasCredits ? "Your credits will be deducted upon approval." : "This will be billed as an extra charge."
       });
-      queryClient.invalidateQueries({
-        queryKey: ["service-requests"]
+      
+      // Invalidate all service-requests queries (including those with user/aircraft IDs)
+      await queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "service-requests"
       });
-      queryClient.invalidateQueries({
-        queryKey: ["service-credits"]
+      
+      // Also invalidate service tasks and credits
+      await queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "service-tasks"
+      });
+      
+      await queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "service-credits"
       });
       setOpen(false);
       setFormData({
