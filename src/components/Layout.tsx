@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
-import logo from "@/assets/freedom-aviation-logo.png";
+import logo from "@/assets/freedom-aviation-logo-original.png";
 
 interface LayoutProps {
   children: ReactNode;
