@@ -15,11 +15,19 @@ export function useUserRole() {
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
+        .eq("user_id", user.id);
 
       if (error) throw error;
-      return data ? (data.role as UserRole) : null;
+      
+      // Handle multiple roles - prioritize admin > instructor > owner
+      if (!data || data.length === 0) return null;
+      
+      const roles = data.map(r => r.role as UserRole);
+      if (roles.includes("admin")) return "admin";
+      if (roles.includes("instructor")) return "instructor";
+      if (roles.includes("owner")) return "owner";
+      
+      return null;
     },
     enabled: !!user,
   });
