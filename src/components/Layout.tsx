@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import logo from "@/assets/freedom-aviation-logo.png";
 
 interface LayoutProps {
   children: ReactNode;
@@ -15,6 +16,7 @@ export function Layout({ children }: LayoutProps) {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <img src={logo} alt="Freedom Aviation Logo" className="h-12 w-auto" />
             <h1 className="text-2xl font-bold">Freedom Aviation</h1>
           </div>
           {user && (
