@@ -55,7 +55,22 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
+-- Guarded drop so it doesn't error on fresh DBs
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM   pg_class c
+    JOIN   pg_namespace n ON n.oid = c.relnamespace
+    WHERE  n.nspname = 'public'
+      AND  c.relname = 'fuel_orders'
+      AND  c.relkind = 'r'
+  ) THEN
+    -- table exists; it's now safe to attempt the drop
+    DROP TRIGGER IF EXISTS trg_fuel_orders_apply_directive ON public.fuel_orders;
+  END IF;
+END
+$$;
 DROP TRIGGER IF EXISTS trg_fuel_orders_apply_directive ON public.fuel_orders;
 CREATE TRIGGER trg_fuel_orders_apply_directive
 BEFORE INSERT ON public.fuel_orders
