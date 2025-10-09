@@ -11,7 +11,7 @@ import { QuickActions } from "@/features/owner/components/QuickActions";
 import { ServiceTimeline } from "@/features/owner/components/ServiceTimeline";
 import { BillingCard } from "@/features/owner/components/BillingCard";
 import { DocsCard } from "@/features/owner/components/DocsCard";
-
+import {OwnerKpis} from "@/features/owner-kpis";
 // Owner Dashboard
 
 export default function OwnerDashboard() {
@@ -303,9 +303,422 @@ export default function OwnerDashboard() {
           />
           <DocsCard />
         </div>
-
+          <div className="grid gap-4 md:grid-cols-4">
+  <OwnerKpis />
+</div>
         <CreditsOverview />
       </div>
     </Layout>
   );
+}
+// ============================================================
+// OWNER DASHBOARD – APPEND-ONLY FEATURE PACK (helpers + renders)
+// Safe to paste at the end of OwnerDashboard.tsx
+// ============================================================
+
+// ---------- Types ----------
+type OD_UUID = string;
+
+export type OD_Reservation = {
+  id: OD_UUID;
+  owner_id: OD_UUID;
+  aircraft_id: OD_UUID;
+  start_at: string;
+  end_at: string;
+  destination?: string | null;
+  status?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type OD_MaintDue = {
+  id: OD_UUID;
+  aircraft_id: OD_UUID;
+  item: string;
+  due_at_hours?: number | null;
+  due_at_date?: string | null;
+  remaining_hours?: number | null;
+  remaining_days?: number | null;
+  severity?: "low" | "normal" | "high" | string | null;
+};
+
+export type OD_Consumables = {
+  aircraft_id: OD_UUID;
+  oil_qts?: number | null;
+  o2_pct?: number | null;
+  tks_pct?: number | null;
+  last_updated?: string | null;
+};
+
+export type OD_PilotCurrency = {
+  owner_id: OD_UUID;
+  fr_due?: string | null;
+  ipc_due?: string | null;
+  medical_due?: string | null;
+  ifr_6in6_status?: string | null;
+  night_to_landing_due?: string | null;
+};
+
+export type OD_Notification = {
+  id: OD_UUID;
+  user_id: OD_UUID;
+  title?: string | null;
+  body?: string | null;
+  level?: "info" | "warning" | "critical" | string | null;
+  read_at?: string | null;
+  created_at?: string | null;
+};
+
+export type OD_Insurance = {
+  aircraft_id: OD_UUID;
+  carrier?: string | null;
+  policy_number?: string | null;
+  limits?: string | null;
+  expires_on?: string | null;
+  status?: string | null;
+};
+
+export type OD_PaymentMethod = {
+  id: OD_UUID;
+  owner_id: OD_UUID;
+  brand?: string | null;
+  last4?: string | null;
+  exp_month?: number | null;
+  exp_year?: number | null;
+  is_default?: boolean | null;
+};
+
+export type OD_Ticket = {
+  id: OD_UUID;
+  owner_id: OD_UUID;
+  subject: string;
+  body?: string | null;
+  status?: "open" | "pending" | "closed" | string | null;
+  updated_at?: string | null;
+  created_at?: string | null;
+};
+
+// ---------- Formatters ----------
+export function od_fmtDate(iso?: string | null) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? "—" : d.toLocaleDateString();
+}
+export function od_fmtDateTime(iso?: string | null) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? "—" : d.toLocaleString();
+}
+export function od_fmtMoneyUSD(v?: number | null) {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return "—";
+  try {
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(Number(v));
+  } catch {
+    return `$${Number(v).toFixed(2)}`;
+  }
+}
+export function od_fmtHours(v?: number | string | null) {
+  if (v === null || v === undefined) return "N/A";
+  const n = typeof v === "number" ? v : Number(v);
+  if (Number.isNaN(n)) return "N/A";
+  return `${n.toFixed(1)} hrs`;
+}
+
+// ---------- API helpers (Supabase) ----------
+export async function od_getReservations(ownerId: string, aircraftId: string, limit = 5): Promise<OD_Reservation[]> {
+  const { data, error } = await supabase
+    .from("reservations")
+    .select("*")
+    .eq("owner_id", ownerId)
+    .eq("aircraft_id", aircraftId)
+    .gte("start_at", new Date().toISOString())
+    .order("start_at", { ascending: true })
+    .limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function od_createReservation(p: {
+  ownerId: string; aircraftId: string; startAt: string; endAt: string; destination?: string;
+}): Promise<OD_Reservation> {
+  const { data, error } = await supabase
+    .from("reservations")
+    .insert({
+      owner_id: p.ownerId, aircraft_id: p.aircraftId,
+      start_at: p.startAt, end_at: p.endAt, destination: p.destination ?? null, status: "requested",
+    })
+    .select("*").maybeSingle();
+  if (error) throw error;
+  return data as OD_Reservation;
+}
+
+export async function od_cancelReservation(reservationId: string): Promise<void> {
+  const { error } = await supabase.from("reservations").update({ status: "cancelled" }).eq("id", reservationId);
+  if (error) throw error;
+}
+
+export async function od_getMaintenanceDue(aircraftId: string, limit = 8): Promise<OD_MaintDue[]> {
+  const { data, error } = await supabase
+    .from("maintenance_due")
+    .select("*")
+    .eq("aircraft_id", aircraftId)
+    .order("severity", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function od_getConsumables(aircraftId: string): Promise<OD_Consumables | null> {
+  const { data, error } = await supabase
+    .from("aircraft_consumables")
+    .select("*")
+    .eq("aircraft_id", aircraftId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function od_requestTopOff(ownerId: string, aircraftId: string, type: "oil" | "o2" | "tks"): Promise<void> {
+  const { error } = await supabase.from("service_requests").insert({
+    user_id: ownerId, aircraft_id: aircraftId, service_type: `Top-Off: ${type.toUpperCase()}`, status: "pending",
+  });
+  if (error) throw error;
+}
+
+export async function od_getPilotCurrency(ownerId: string): Promise<OD_PilotCurrency | null> {
+  const { data, error } = await supabase
+    .from("pilot_currency")
+    .select("*")
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function od_getUnreadNotifications(userId: string, limit = 10): Promise<OD_Notification[]> {
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_id", userId)
+    .is("read_at", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function od_markAllNotificationsRead(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .is("read_at", null);
+  if (error) throw error;
+}
+
+export async function od_getInsurance(aircraftId: string): Promise<OD_Insurance | null> {
+  const { data, error } = await supabase
+    .from("insurance_policies")
+    .select("*")
+    .eq("aircraft_id", aircraftId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function od_getPaymentMethods(ownerId: string): Promise<OD_PaymentMethod[]> {
+  const { data, error } = await supabase
+    .from("payment_methods")
+    .select("*")
+    .eq("owner_id", ownerId)
+    .order("is_default", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function od_setDefaultPaymentMethod(ownerId: string, paymentMethodId: string): Promise<void> {
+  const { error: e1 } = await supabase.from("payment_methods").update({ is_default: false }).eq("owner_id", ownerId);
+  if (e1) throw e1;
+  const { error: e2 } = await supabase
+    .from("payment_methods")
+    .update({ is_default: true })
+    .eq("id", paymentMethodId)
+    .eq("owner_id", ownerId);
+  if (e2) throw e2;
+}
+
+export async function od_removePaymentMethod(ownerId: string, paymentMethodId: string): Promise<void> {
+  const { error } = await supabase
+    .from("payment_methods")
+    .delete()
+    .eq("id", paymentMethodId)
+    .eq("owner_id", ownerId);
+  if (error) throw error;
+}
+
+export async function od_createSupportTicket(ownerId: string, subject: string, body?: string): Promise<OD_Ticket> {
+  const { data, error } = await supabase
+    .from("support_tickets")
+    .insert({ owner_id: ownerId, subject, body: body ?? null, status: "open" })
+    .select("*").maybeSingle();
+  if (error) throw error;
+  return data as OD_Ticket;
+}
+
+export async function od_listSupportTickets(ownerId: string, limit = 5): Promise<OD_Ticket[]> {
+  const { data, error } = await supabase
+    .from("support_tickets")
+    .select("*")
+    .eq("owner_id", ownerId)
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function od_createSquawk(p: { ownerId: string; aircraftId: string; item: string; notes?: string; }): Promise<void> {
+  const { error } = await supabase.from("service_requests").insert({
+    user_id: p.ownerId, aircraft_id: p.aircraftId, service_type: "Squawk", status: "pending",
+    notes: p.notes ? `${p.item} — ${p.notes}` : p.item,
+  });
+  if (error) throw error;
+}
+
+export async function od_createDocPlaceholder(p: { ownerId: string; aircraftId?: string; label: string; }): Promise<void> {
+  const { error } = await supabase.from("documents").insert({
+    owner_id: p.ownerId, aircraft_id: p.aircraftId ?? null, label: p.label, status: "pending_upload",
+  });
+  if (error) throw error;
+}
+
+// ---------- Minimal render helpers (optional) ----------
+// These are tiny UI snippets you can drop into your JSX later.
+// They depend only on your existing shadcn components already imported.
+
+export function renderOwnerReservations(rows: OD_Reservation[]) {
+  return (
+    <div className="space-y-2">
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No upcoming reservations.</p>
+      ) : rows.map(r => (
+        <div key={r.id} className="flex items-center justify-between rounded-lg border p-3">
+          <div>
+            <div className="font-medium">
+              {od_fmtDateTime(r.start_at)} → {new Date(r.end_at).toLocaleTimeString()}
+            </div>
+            <div className="text-xs text-muted-foreground">Destination: {r.destination || "—"}</div>
+          </div>
+          <Badge variant="outline">{r.status || "scheduled"}</Badge>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function renderMaintenanceDue(rows: OD_MaintDue[]) {
+  return (
+    <div className="space-y-2">
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No upcoming items.</p>
+      ) : rows.map(m => (
+        <div key={m.id} className="rounded-md border p-3">
+          <div className="flex items-center justify-between">
+            <div className="font-medium">{m.item}</div>
+            <Badge>{m.severity || "normal"}</Badge>
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            {m.due_at_hours ? `Due in ${m.remaining_hours ?? "?"} hrs` : null}
+            {m.due_at_hours && m.due_at_date ? " • " : null}
+            {m.due_at_date ? `Due by ${od_fmtDate(m.due_at_date)}` : null}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function renderConsumables(c: OD_Consumables | null) {
+  if (!c) return <p className="text-sm text-muted-foreground">No consumable data yet.</p>;
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-4 text-center">
+        <div><div className="text-xs text-muted-foreground">Oil</div><div className="text-xl font-semibold">{c.oil_qts ?? "—"} qts</div></div>
+        <div><div className="text-xs text-muted-foreground">O₂</div><div className="text-xl font-semibold">{c.o2_pct ?? "—"}%</div></div>
+        <div><div className="text-xs text-muted-foreground">TKS</div><div className="text-xl font-semibold">{c.tks_pct ?? "—"}%</div></div>
+      </div>
+      <div className="text-xs text-muted-foreground">Updated {c.last_updated ? od_fmtDateTime(c.last_updated) : "—"}</div>
+    </div>
+  );
+}
+
+export function renderPilotCurrency(cur: OD_PilotCurrency | null) {
+  if (!cur) return <p className="text-sm text-muted-foreground">No currency data found.</p>;
+  return (
+    <div className="grid grid-cols-2 gap-3 text-sm">
+      <div><div className="text-xs text-muted-foreground">Flight Review Due</div><div className="font-medium">{od_fmtDate(cur.fr_due)}</div></div>
+      <div><div className="text-xs text-muted-foreground">IPC Due</div><div className="font-medium">{od_fmtDate(cur.ipc_due)}</div></div>
+      <div><div className="text-xs text-muted-foreground">Medical Due</div><div className="font-medium">{od_fmtDate(cur.medical_due)}</div></div>
+      <div><div className="text-xs text-muted-foreground">IFR 6-in-6</div><div className="font-medium">{cur.ifr_6in6_status ?? "—"}</div></div>
+    </div>
+  );
+}
+
+export function renderInsurance(i: OD_Insurance | null) {
+  if (!i) return <p className="text-sm text-muted-foreground">No policy on file.</p>;
+  return (
+    <div className="space-y-1 text-sm">
+      <div className="font-medium">{i.carrier || "Carrier —"}</div>
+      <div className="text-xs text-muted-foreground">Policy #{i.policy_number || "—"} • Limits {i.limits || "—"}</div>
+      <div className="text-xs">Expires: <span className="font-medium">{od_fmtDate(i.expires_on)}</span></div>
+    </div>
+  );
+}
+
+export function renderPaymentMethods(rows: OD_PaymentMethod[]) {
+  if (rows.length === 0) return <p className="text-sm text-muted-foreground">No payment methods saved.</p>;
+  return (
+    <div className="space-y-2">
+      {rows.map(pm => (
+        <div key={pm.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
+          <div>
+            <div className="font-medium">{pm.brand || "Card"} •••• {pm.last4}</div>
+            <div className="text-xs text-muted-foreground">Expires {pm.exp_month}/{pm.exp_year}</div>
+          </div>
+          <div className="flex items-center gap-2">
+            {pm.is_default ? <Badge>Default</Badge> : <span className="text-xs text-muted-foreground">—</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function renderTickets(rows: OD_Ticket[]) {
+  if (rows.length === 0) return <p className="text-sm text-muted-foreground">No recent tickets.</p>;
+  return (
+    <div className="space-y-2">
+      {rows.map(t => (
+        <div key={t.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
+          <div>
+            <div className="font-medium">{t.subject}</div>
+            <div className="text-xs text-muted-foreground">Updated {od_fmtDateTime(t.updated_at || t.created_at || "")}</div>
+          </div>
+          <Badge variant="outline">{t.status || "open"}</Badge>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------- Quick role/debug utilities ----------
+export async function od_getUserRoles(userId: string): Promise<string[]> {
+  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+  if (error) throw error;
+  return (data || []).map((r: any) => r.role);
+}
+export function od_isOwner(roles: string[]) {
+  return roles.includes("owner");
+}
+export function od_isAdmin(roles: string[]) {
+  return roles.includes("admin");
 }

@@ -50,6 +50,13 @@ export type Database = {
             referencedRelation: "aircraft"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "activity_logs_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "v_owner_aircraft"
+            referencedColumns: ["id"]
+          },
         ]
       }
       aircraft: {
@@ -90,6 +97,147 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      aircraft_consumables: {
+        Row: {
+          aircraft_id: string
+          created_at: string
+          last_updated: string | null
+          o2_pct: number | null
+          oil_qts: number | null
+          tks_pct: number | null
+          updated_at: string
+        }
+        Insert: {
+          aircraft_id: string
+          created_at?: string
+          last_updated?: string | null
+          o2_pct?: number | null
+          oil_qts?: number | null
+          tks_pct?: number | null
+          updated_at?: string
+        }
+        Update: {
+          aircraft_id?: string
+          created_at?: string
+          last_updated?: string | null
+          o2_pct?: number | null
+          oil_qts?: number | null
+          tks_pct?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aircraft_consumables_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: true
+            referencedRelation: "aircraft"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircraft_consumables_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: true
+            referencedRelation: "v_owner_aircraft"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          aircraft_id: string | null
+          created_at: string
+          id: string
+          label: string
+          owner_id: string
+          status: string | null
+          storage_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          aircraft_id?: string | null
+          created_at?: string
+          id?: string
+          label: string
+          owner_id: string
+          status?: string | null
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aircraft_id?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          owner_id?: string
+          status?: string | null
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "v_owner_aircraft"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_policies: {
+        Row: {
+          aircraft_id: string
+          carrier: string | null
+          created_at: string
+          expires_on: string | null
+          limits: string | null
+          policy_number: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          aircraft_id: string
+          carrier?: string | null
+          created_at?: string
+          expires_on?: string | null
+          limits?: string | null
+          policy_number?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aircraft_id?: string
+          carrier?: string | null
+          created_at?: string
+          expires_on?: string | null
+          limits?: string | null
+          policy_number?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_policies_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: true
+            referencedRelation: "aircraft"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_policies_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: true
+            referencedRelation: "v_owner_aircraft"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoice_lines: {
         Row: {
@@ -169,6 +317,67 @@ export type Database = {
             columns: ["aircraft_id"]
             isOneToOne: false
             referencedRelation: "aircraft"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "v_owner_aircraft"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_due: {
+        Row: {
+          aircraft_id: string
+          created_at: string
+          due_at_date: string | null
+          due_at_hours: number | null
+          id: string
+          item: string
+          remaining_days: number | null
+          remaining_hours: number | null
+          severity: string | null
+          updated_at: string
+        }
+        Insert: {
+          aircraft_id: string
+          created_at?: string
+          due_at_date?: string | null
+          due_at_hours?: number | null
+          id?: string
+          item: string
+          remaining_days?: number | null
+          remaining_hours?: number | null
+          severity?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aircraft_id?: string
+          created_at?: string
+          due_at_date?: string | null
+          due_at_hours?: number | null
+          id?: string
+          item?: string
+          remaining_days?: number | null
+          remaining_hours?: number | null
+          severity?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_due_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_due_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "v_owner_aircraft"
             referencedColumns: ["id"]
           },
         ]
@@ -256,6 +465,105 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          level: string | null
+          read_at: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          level?: string | null
+          read_at?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          level?: string | null
+          read_at?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payment_methods: {
+        Row: {
+          brand: string | null
+          created_at: string
+          exp_month: number | null
+          exp_year: number | null
+          id: string
+          is_default: boolean
+          last4: string | null
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pilot_currency: {
+        Row: {
+          created_at: string
+          fr_due: string | null
+          ifr_6in6_status: string | null
+          ipc_due: string | null
+          medical_due: string | null
+          night_to_landing_due: string | null
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fr_due?: string | null
+          ifr_6in6_status?: string | null
+          ipc_due?: string | null
+          medical_due?: string | null
+          night_to_landing_due?: string | null
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fr_due?: string | null
+          ifr_6in6_status?: string | null
+          ipc_due?: string | null
+          medical_due?: string | null
+          night_to_landing_due?: string | null
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -282,6 +590,57 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      reservations: {
+        Row: {
+          aircraft_id: string
+          created_at: string
+          destination: string | null
+          end_at: string
+          id: string
+          owner_id: string
+          start_at: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          aircraft_id: string
+          created_at?: string
+          destination?: string | null
+          end_at: string
+          id?: string
+          owner_id: string
+          start_at: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aircraft_id?: string
+          created_at?: string
+          destination?: string | null
+          end_at?: string
+          id?: string
+          owner_id?: string
+          start_at?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservations_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "v_owner_aircraft"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_credits: {
         Row: {
@@ -403,17 +762,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "service_requests_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "v_owner_aircraft"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "service_requests_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "service_requests_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -463,6 +822,13 @@ export type Database = {
             referencedRelation: "aircraft"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "service_tasks_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "v_owner_aircraft"
+            referencedColumns: ["id"]
+          },
         ]
       }
       services: {
@@ -510,6 +876,36 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          owner_id: string
+          status: string | null
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          owner_id: string
+          status?: string | null
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          owner_id?: string
+          status?: string | null
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -533,7 +929,120 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_memberships: {
+        Row: {
+          active: boolean | null
+          base_price: number | null
+          created_at: string | null
+          end_date: string | null
+          id: string | null
+          owner_id: string | null
+          start_date: string | null
+          tier: string | null
+          tier_id: string | null
+          tier_name: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memberships_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "membership_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_owner_aircraft: {
+        Row: {
+          base_location: string | null
+          created_at: string | null
+          hobbs_time: number | null
+          id: string | null
+          model: string | null
+          owner_id: string | null
+          status: string | null
+          tach_time: number | null
+          tail_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_location?: string | null
+          created_at?: string | null
+          hobbs_time?: number | null
+          id?: string | null
+          model?: string | null
+          owner_id?: string | null
+          status?: string | null
+          tach_time?: number | null
+          tail_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_location?: string | null
+          created_at?: string | null
+          hobbs_time?: number | null
+          id?: string | null
+          model?: string | null
+          owner_id?: string | null
+          status?: string | null
+          tach_time?: number | null
+          tail_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      v_service_requests: {
+        Row: {
+          aircraft_id: string | null
+          airport: string | null
+          base_location: string | null
+          cabin_provisioning: Json | null
+          created_at: string | null
+          credits_used: number | null
+          description: string | null
+          fuel_grade: string | null
+          fuel_quantity: number | null
+          gpu_required: boolean | null
+          hangar_pullout: boolean | null
+          id: string | null
+          is_extra_charge: boolean | null
+          o2_topoff: boolean | null
+          priority: string | null
+          requested_departure: string | null
+          requester_name: string | null
+          service_id: string | null
+          service_type: string | null
+          status: string | null
+          tail_number: string | null
+          tks_topoff: boolean | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_requests_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "aircraft"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_requests_aircraft_id_fkey"
+            columns: ["aircraft_id"]
+            isOneToOne: false
+            referencedRelation: "v_owner_aircraft"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
