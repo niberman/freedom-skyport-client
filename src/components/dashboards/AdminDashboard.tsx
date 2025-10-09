@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ServicesManagement } from "@/components/admin/ServicesManagement";
+import { UserRoleManager } from "@/components/admin/UserRoleManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function AdminDashboard() {
@@ -127,6 +128,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="services">Service Options</TabsTrigger>
             <TabsTrigger value="requests">Service Requests</TabsTrigger>
             <TabsTrigger value="aircraft">Aircraft</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
           </TabsList>
 
             <TabsContent value="services">
@@ -153,6 +155,10 @@ export default function AdminDashboard() {
                   <p className="text-sm text-muted-foreground">Aircraft management coming soon...</p>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="users">
+              <UserRoleManager />
             </TabsContent>
           </Tabs>
         </div>

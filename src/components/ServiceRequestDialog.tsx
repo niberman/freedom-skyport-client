@@ -48,22 +48,20 @@ export function ServiceRequestDialog({
     user
   } = useAuth();
   const queryClient = useQueryClient();
-  const {
-    data: services
-  } = useQuery({
+  const { data: services } = useQuery({
     queryKey: ["active-services"],
     queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from("services").select("*").eq("is_active", true).order("category", {
-        ascending: true
-      }).order("name", {
-        ascending: true
-      });
+      const { data, error } = await supabase
+        .from("services")
+        .select(
+          "id, name, category, description, is_active, credits_required, can_rollover, base_credits_low_activity, base_credits_high_activity"
+        )
+        .eq("is_active", true)
+        .order("category", { ascending: true })
+        .order("name", { ascending: true });
       if (error) throw error;
       return data;
-    }
+    },
   });
   const {
     data: serviceCredits

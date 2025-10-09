@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,45 +31,50 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useServices, ServiceRecord } from "@/hooks/useServices";
 
-interface Service {
-  id: string;
+// Local editable shape (subset + additional numeric fields)
+interface EditableServiceForm {
   name: string;
-  description: string | null;
+  description: string;
   category: string;
-  is_active: boolean;
+  credits_required: number;
+  can_rollover: boolean;
+  credits_per_period: number;
+  base_credits_low_activity: number;
+  base_credits_high_activity: number;
 }
 
 export function ServicesManagement() {
   const [open, setOpen] = useState(false);
-  const [editingService, setEditingService] = useState<Service | null>(null);
-  const [formData, setFormData] = useState({
+  const [editingService, setEditingService] = useState<ServiceRecord | null>(null);
+  const [formData, setFormData] = useState<EditableServiceForm>({
     name: "",
     description: "",
     category: "maintenance",
     credits_required: 1,
     can_rollover: false,
     credits_per_period: 1,
+    base_credits_low_activity: 0,
+    base_credits_high_activity: 0,
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: services, isLoading } = useQuery({
-    queryKey: ["services"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("services")
-        .select("*")
-        .order("category", { ascending: true })
-        .order("name", { ascending: true });
-      if (error) throw error;
-      return data as Service[];
-    },
-  });
+  const { data: services, isLoading } = useServices();
 
   const createMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const { error } = await supabase.from("services").insert(data);
+    mutationFn: async (data: EditableServiceForm) => {
+      const { error } = await supabase.from("services").insert({
+        name: data.name,
+        description: data.description || null,
+        category: data.category,
+        credits_required: data.credits_required,
+        can_rollover: data.can_rollover,
+        credits_per_period: data.credits_per_period,
+        base_credits_low_activity: data.base_credits_low_activity,
+        base_credits_high_activity: data.base_credits_high_activity,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -93,9 +98,15 @@ export function ServicesManagement() {
       data,
     }: {
       id: string;
-      data: Partial<Service>;
+      data: Partial<ServiceRecord> & Partial<EditableServiceForm>;
     }) => {
-      const { error } = await supabase.from("services").update(data).eq("id", id);
+      const { error } = await supabase
+        .from("services")
+        .update({
+          ...data,
+          description: data.description ?? null,
+        })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -133,13 +144,15 @@ export function ServicesManagement() {
   });
 
   const resetForm = () => {
-    setFormData({ 
-      name: "", 
-      description: "", 
+    setFormData({
+      name: "",
+      description: "",
       category: "maintenance",
       credits_required: 1,
       can_rollover: false,
       credits_per_period: 1,
+      base_credits_low_activity: 0,
+      base_credits_high_activity: 0,
     });
     setEditingService(null);
   };
@@ -153,7 +166,7 @@ export function ServicesManagement() {
     }
   };
 
-  const handleEdit = (service: any) => {
+  const handleEdit = (service: ServiceRecord) => {
     setEditingService(service);
     setFormData({
       name: service.name,
@@ -162,11 +175,13 @@ export function ServicesManagement() {
       credits_required: service.credits_required || 1,
       can_rollover: service.can_rollover || false,
       credits_per_period: service.credits_per_period || 1,
+      base_credits_low_activity: service.base_credits_low_activity || 0,
+      base_credits_high_activity: service.base_credits_high_activity || 0,
     });
     setOpen(true);
   };
 
-  const toggleActive = (service: Service) => {
+  const toggleActive = (service: ServiceRecord) => {
     updateMutation.mutate({
       id: service.id,
       data: { is_active: !service.is_active },
@@ -245,9 +260,9 @@ export function ServicesManagement() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="credits_required">Credits Required</Label>
+                  <Label htmlFor="credits_required">Credits Req.</Label>
                   <Input
                     id="credits_required"
                     type="number"
@@ -258,9 +273,8 @@ export function ServicesManagement() {
                     }
                   />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="credits_per_period">Credits Per Month</Label>
+                  <Label htmlFor="credits_per_period">Credits / Period</Label>
                   <Input
                     id="credits_per_period"
                     type="number"
@@ -268,6 +282,30 @@ export function ServicesManagement() {
                     value={formData.credits_per_period}
                     onChange={(e) =>
                       setFormData({ ...formData, credits_per_period: parseInt(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="base_credits_low_activity">Base Low Activity</Label>
+                  <Input
+                    id="base_credits_low_activity"
+                    type="number"
+                    min="0"
+                    value={formData.base_credits_low_activity}
+                    onChange={(e) =>
+                      setFormData({ ...formData, base_credits_low_activity: parseInt(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="base_credits_high_activity">Base High Activity</Label>
+                  <Input
+                    id="base_credits_high_activity"
+                    type="number"
+                    min="0"
+                    value={formData.base_credits_high_activity}
+                    onChange={(e) =>
+                      setFormData({ ...formData, base_credits_high_activity: parseInt(e.target.value) || 0 })
                     }
                   />
                 </div>
@@ -326,12 +364,15 @@ export function ServicesManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {services.map((service: any) => (
+              {services.map((service) => (
                 <TableRow key={service.id}>
                   <TableCell className="font-medium">{service.name}</TableCell>
                   <TableCell>{categoryLabels[service.category]}</TableCell>
-                  <TableCell className="text-sm">
-                    {service.credits_required || 0} / {service.credits_per_period || 0} per month
+                  <TableCell className="text-sm space-y-1">
+                    <div>{service.credits_required || 0} req</div>
+                    <div className="text-xs text-muted-foreground">
+                      {service.credits_per_period || 0}/period · L:{service.base_credits_low_activity || 0} H:{service.base_credits_high_activity || 0}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {service.can_rollover ? "✓" : "—"}
