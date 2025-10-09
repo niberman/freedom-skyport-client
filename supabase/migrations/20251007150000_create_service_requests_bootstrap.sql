@@ -28,13 +28,23 @@ BEGIN
 END$$;
 
 ALTER TABLE public.service_requests ENABLE ROW LEVEL SECURITY;
-
+-- Ensure updated_at helper exists
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 -- Policies (create if missing)
 DO $policies$
 BEGIN
   -- Users can view their own
   IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE polname = 'Users can view their own service requests'
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'service_requests'
+      AND policyname = 'Users can view their own service requests'
   ) THEN
     CREATE POLICY "Users can view their own service requests"
     ON public.service_requests
@@ -44,7 +54,10 @@ BEGIN
 
   -- Users can create their own
   IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE polname = 'Users can create their own service requests'
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'service_requests'
+      AND policyname = 'Users can create their own service requests'
   ) THEN
     CREATE POLICY "Users can create their own service requests"
     ON public.service_requests
@@ -54,7 +67,10 @@ BEGIN
 
   -- Users can update their own
   IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE polname = 'Users can update their own service requests'
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'service_requests'
+      AND policyname = 'Users can update their own service requests'
   ) THEN
     CREATE POLICY "Users can update their own service requests"
     ON public.service_requests
@@ -64,7 +80,10 @@ BEGIN
 
   -- Admins can view all
   IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE polname = 'Admins can view all service requests'
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'service_requests'
+      AND policyname = 'Admins can view all service requests'
   ) THEN
     CREATE POLICY "Admins can view all service requests"
     ON public.service_requests
@@ -74,7 +93,10 @@ BEGIN
 
   -- Admins can manage all
   IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE polname = 'Admins can manage all service requests'
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'service_requests'
+      AND policyname = 'Admins can manage all service requests'
   ) THEN
     CREATE POLICY "Admins can manage all service requests"
     ON public.service_requests
