@@ -15,66 +15,6 @@ DO $$ BEGIN
     );
   END IF;
 END $$;
--- ========= FBOs + directives (scalable “who pays” per tail@FBO) =========
-CREATE TABLE IF NOT EXISTS public.fbos (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  airport_icao text NOT NULL,
-  email_receipts_to text,
-  phone text
-);
-
-CREATE TABLE IF NOT EXISTS public.fuel_authorizations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  aircraft_id uuid NOT NULL REFERENCES public.aircraft(id) ON DELETE CASCADE,
-  fbo_id uuid NOT NULL REFERENCES public.fbos(id) ON DELETE CASCADE,
-  directive fuel_billing_directive NOT NULL,
-  client_card_last4 text,
-  client_card_brand text,
-  client_card_exp text,
-  authorization_doc_url text,
-  active boolean NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (aircraft_id, fbo_id, active)
-);
-
-CREATE OR REPLACE FUNCTION public.fuel_orders_apply_directive()
-RETURNS trigger AS $$
-BEGIN
-  IF NEW.applied_fbo_id IS NULL THEN
-    RETURN NEW;
-  END IF;
-
-  SELECT fa.directive INTO NEW.applied_directive
-  FROM public.fuel_authorizations fa
-  WHERE fa.aircraft_id = NEW.aircraft_id
-    AND fa.fbo_id = NEW.applied_fbo_id
-    AND fa.active = true
-  LIMIT 1;
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
--- Guarded drop so it doesn't error on fresh DBs
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1
-    FROM   pg_class c
-    JOIN   pg_namespace n ON n.oid = c.relnamespace
-    WHERE  n.nspname = 'public'
-      AND  c.relname = 'fuel_orders'
-      AND  c.relkind = 'r'
-  ) THEN
-    -- table exists; it's now safe to attempt the drop
-    DROP TRIGGER IF EXISTS trg_fuel_orders_apply_directive ON public.fuel_orders;
-  END IF;
-END
-$$;
-DROP TRIGGER IF EXISTS trg_fuel_orders_apply_directive ON public.fuel_orders;
-CREATE TRIGGER trg_fuel_orders_apply_directive
-BEFORE INSERT ON public.fuel_orders
-FOR EACH ROW EXECUTE FUNCTION public.fuel_orders_apply_directive();
 
 -- ========= Ensure fuel_logs exists (bootstrap if missing) =========
 DO $$
@@ -103,9 +43,7 @@ ALTER TABLE public.aircraft
   ADD COLUMN IF NOT EXISTS tabs_fuel_gal   numeric(6,1);
 
 UPDATE public.aircraft SET fuel_type = COALESCE(fuel_type,'AVGAS_100LL');
-
-ALTER TABLE public.aircraft
-  ALTER COLUMN fuel_type SET NOT NULL;
+ALTER TABLE public.aircraft ALTER COLUMN fuel_type SET NOT NULL;
 
 -- ========= Fuel logs (mirror aircraft fuel type) =========
 ALTER TABLE public.fuel_logs
@@ -236,7 +174,30 @@ END $$;
 
 REVOKE UPDATE, DELETE ON public.aircraft_fuel_status FROM authenticated;
 
--- ========= Smart fuel orders (Add qty / Tabs / Tabs+ / Full) =========
+-- ========= FBOs + directives (scalable “who pays” per tail@FBO) =========
+CREATE TABLE IF NOT EXISTS public.fbos (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  airport_icao text NOT NULL,
+  email_receipts_to text,
+  phone text
+);
+
+CREATE TABLE IF NOT EXISTS public.fuel_authorizations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  aircraft_id uuid NOT NULL REFERENCES public.aircraft(id) ON DELETE CASCADE,
+  fbo_id uuid NOT NULL REFERENCES public.fbos(id) ON DELETE CASCADE,
+  directive fuel_billing_directive NOT NULL,
+  client_card_last4 text,
+  client_card_brand text,
+  client_card_exp text,
+  authorization_doc_url text,
+  active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (aircraft_id, fbo_id, active)
+);
+
+-- ========= fuel_orders (after fbos exists) =========
 CREATE TABLE IF NOT EXISTS public.fuel_orders (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   aircraft_id uuid NOT NULL REFERENCES public.aircraft(id) ON DELETE CASCADE,
@@ -254,6 +215,7 @@ CREATE TABLE IF NOT EXISTS public.fuel_orders (
   applied_fbo_id uuid REFERENCES public.fbos(id)
 );
 
+-- Compute function + trigger
 CREATE OR REPLACE FUNCTION public.fuel_orders_compute()
 RETURNS trigger AS $$
 DECLARE
@@ -297,12 +259,61 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_fuel_orders_compute ON public.fuel_orders;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM   pg_class c
+    JOIN   pg_namespace n ON n.oid = c.relnamespace
+    WHERE  n.nspname = 'public'
+      AND  c.relname = 'fuel_orders'
+      AND  c.relkind = 'r'
+  ) THEN
+    DROP TRIGGER IF EXISTS trg_fuel_orders_compute ON public.fuel_orders;
+  END IF;
+END
+$$;
+
 CREATE TRIGGER trg_fuel_orders_compute
 BEFORE INSERT ON public.fuel_orders
 FOR EACH ROW EXECUTE FUNCTION public.fuel_orders_compute();
 
+-- Apply-directive function + trigger
+CREATE OR REPLACE FUNCTION public.fuel_orders_apply_directive()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.applied_fbo_id IS NULL THEN
+    RETURN NEW;
+  END IF;
 
+  SELECT fa.directive INTO NEW.applied_directive
+  FROM public.fuel_authorizations fa
+  WHERE fa.aircraft_id = NEW.aircraft_id
+    AND fa.fbo_id = NEW.applied_fbo_id
+    AND fa.active = true
+  LIMIT 1;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM   pg_class c
+    JOIN   pg_namespace n ON n.oid = c.relnamespace
+    WHERE  n.nspname = 'public'
+      AND  c.relname = 'fuel_orders'
+      AND  c.relkind = 'r'
+  ) THEN
+  END IF;
+END
+$$;
+
+CREATE TRIGGER trg_fuel_orders_apply_directive
+BEFORE INSERT ON public.fuel_orders
+FOR EACH ROW EXECUTE FUNCTION public.fuel_orders_apply_directive();
 
 -- ========= Client billing profiles (Stripe/FBO metadata; NO PAN) =========
 CREATE TABLE IF NOT EXISTS public.client_billing_profiles (
