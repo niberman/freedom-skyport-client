@@ -15,18 +15,17 @@ DO $$ BEGIN
     );
   END IF;
 END $$;
--- ========= Ensure fuel_logs exists (remote dev is missing it) =========
+
+-- ========= Ensure fuel_logs exists (bootstrap if missing) =========
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1
-    FROM information_schema.tables
+    SELECT 1 FROM information_schema.tables
     WHERE table_schema = 'public' AND table_name = 'fuel_logs'
   ) THEN
     CREATE TABLE public.fuel_logs (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       aircraft_id uuid NOT NULL REFERENCES public.aircraft(id) ON DELETE CASCADE,
-      -- quantity & fuel_type will be (re)added/guarded below, but create sensible defaults now
       quantity numeric(6,1) NOT NULL DEFAULT 0,
       fuel_type fuel_type,
       filled_at timestamptz NOT NULL DEFAULT now(),
@@ -36,6 +35,7 @@ BEGIN
     CREATE INDEX IF NOT EXISTS idx_fuel_logs_aircraft_id ON public.fuel_logs(aircraft_id);
   END IF;
 END$$;
+
 -- ========= Aircraft shape =========
 ALTER TABLE public.aircraft
   ADD COLUMN IF NOT EXISTS fuel_type fuel_type,
@@ -84,7 +84,7 @@ CREATE TRIGGER trg_fuel_logs_set_type
 BEFORE INSERT OR UPDATE OF aircraft_id ON public.fuel_logs
 FOR EACH ROW EXECUTE FUNCTION public.fuel_logs_set_type();
 
--- ========= Live “current fuel” snapshots =========
+-- ========= Live “current fuel” snapshots (trigger-enforced cap) =========
 CREATE TABLE IF NOT EXISTS public.aircraft_fuel_status (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   aircraft_id uuid NOT NULL REFERENCES public.aircraft(id) ON DELETE CASCADE,
@@ -92,11 +92,31 @@ CREATE TABLE IF NOT EXISTS public.aircraft_fuel_status (
   measured_at timestamptz NOT NULL DEFAULT now(),
   method fuel_status_method NOT NULL DEFAULT 'manual',
   notes text,
-  recorded_by uuid DEFAULT auth.uid(),
-  CONSTRAINT gallons_not_exceed_full CHECK (
-    gallons_onboard <= (SELECT a.usable_fuel_gal FROM public.aircraft a WHERE a.id = aircraft_id)
-  )
+  recorded_by uuid DEFAULT auth.uid()
 );
+
+CREATE OR REPLACE FUNCTION public.afs_enforce_capacity()
+RETURNS trigger AS $$
+DECLARE
+  max_usable numeric(6,1);
+BEGIN
+  SELECT a.usable_fuel_gal INTO max_usable
+  FROM public.aircraft a
+  WHERE a.id = NEW.aircraft_id;
+
+  IF max_usable IS NOT NULL AND NEW.gallons_onboard > max_usable THEN
+    RAISE EXCEPTION 'gallons_onboard (%.1f) exceeds aircraft usable fuel (%.1f) for aircraft %',
+      NEW.gallons_onboard, max_usable, NEW.aircraft_id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_afs_enforce_capacity ON public.aircraft_fuel_status;
+CREATE TRIGGER trg_afs_enforce_capacity
+BEFORE INSERT OR UPDATE ON public.aircraft_fuel_status
+FOR EACH ROW EXECUTE FUNCTION public.afs_enforce_capacity();
 
 CREATE OR REPLACE VIEW public.v_aircraft_fuel_latest AS
 SELECT DISTINCT ON (afs.aircraft_id)
