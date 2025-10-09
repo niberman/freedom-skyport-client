@@ -26,7 +26,7 @@ export default function OwnerDashboard() {
       }
       const { data } = await supabase
         .from("aircraft")
-        .select("*")
+        .select("id, tail_number, model, owner_id, base_location, status, hobbs_time, tach_time, created_at, updated_at")
         .eq("owner_id", user?.id)
         .limit(1)
         .maybeSingle();
@@ -43,7 +43,7 @@ export default function OwnerDashboard() {
       }
       const { data } = await supabase
         .from("service_requests")
-        .select("*")
+        .select("id, aircraft_id, user_id, service_id, service_type, description, priority, airport, requested_departure, status, credits_used, is_extra_charge, created_at, updated_at")
         .eq("user_id", user?.id)
         .eq("service_type", "Pre-Flight Concierge")
         .not("requested_departure", "is", null)
@@ -64,7 +64,7 @@ export default function OwnerDashboard() {
       }
       const { data, error } = await supabase
         .from("service_requests")
-        .select("*")
+        .select("id, aircraft_id, user_id, service_id, service_type, description, priority, airport, requested_departure, status, credits_used, is_extra_charge, created_at, updated_at")
         .eq("user_id", user?.id)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -88,7 +88,7 @@ export default function OwnerDashboard() {
       
       const { data, error } = await supabase
         .from("service_tasks")
-        .select("*")
+        .select("id, aircraft_id, type, status, assigned_to, notes, photos, completed_at, created_at, updated_at")
         .eq("aircraft_id", aircraft.id)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -123,7 +123,7 @@ export default function OwnerDashboard() {
       
       const { data, error } = await supabase
         .from("invoices")
-        .select("*")
+        .select("id, aircraft_id, owner_id, period_start, period_end, status, total_cents, hosted_invoice_url, created_at, updated_at")
         .eq("aircraft_id", aircraft.id)
         .eq("owner_id", user.id)
         .order("created_at", { ascending: false })
@@ -147,7 +147,7 @@ export default function OwnerDashboard() {
       
       const { data, error } = await supabase
         .from("memberships")
-        .select("*")
+        .select("id, owner_id, tier, tier_id, active, start_date, end_date, created_at, updated_at")
         .eq("owner_id", user.id)
         .eq("active", true)
         .maybeSingle();
