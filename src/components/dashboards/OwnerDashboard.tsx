@@ -5,14 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { Plane, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { CreditsOverview } from "@/components/owner/CreditsOverview";
 import { QuickActions } from "@/features/owner/components/QuickActions";
 import { ServiceTimeline } from "@/features/owner/components/ServiceTimeline";
 import { BillingCard } from "@/features/owner/components/BillingCard";
 import { DocsCard } from "@/features/owner/components/DocsCard";
-import {OwnerKpis} from "@/features/owner-kpis";
-
 // Owner Dashboard
 
 export default function OwnerDashboard() {
@@ -26,7 +24,7 @@ export default function OwnerDashboard() {
       }
       const { data } = await supabase
         .from("aircraft")
-        .select("id, tail_number, model, owner_id, base_location, status, hobbs_time, tach_time, created_at, updated_at")
+        .select("id, tail_number, model, owner_id, base_location, status, hobbs_time, tach_time, fuel_type, usable_fuel_gal, tabs_fuel_gal, created_at, updated_at")
         .eq("owner_id", user?.id)
         .limit(1)
         .maybeSingle();
@@ -111,6 +109,25 @@ export default function OwnerDashboard() {
         created_at: task.created_at,
         updated_at: task.updated_at,
       }));
+    },
+  });
+
+  // Latest fuel snapshot
+  const { data: fuelLatest } = useQuery({
+    queryKey: ["fuel-latest", aircraft?.id],
+    enabled: Boolean(aircraft?.id),
+    queryFn: async () => {
+      if (!aircraft?.id) return null;
+      const { data, error } = await supabase
+        .from("v_aircraft_fuel_latest")
+        .select("gallons_onboard, measured_at")
+        .eq("aircraft_id", aircraft.id)
+        .maybeSingle();
+      if (error) {
+        console.error("Error fetching latest fuel:", error);
+        return null;
+      }
+      return data;
     },
   });
 
@@ -267,6 +284,56 @@ export default function OwnerDashboard() {
                   </div>
                 </div>
 
+                <div className="pt-2 border-t">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Fuel Onboard</span>
+                        <span className="font-medium">
+                          {fuelLatest?.gallons_onboard !== undefined && fuelLatest?.gallons_onboard !== null
+                            ? `${Number(fuelLatest.gallons_onboard).toFixed(1)} gal`
+                            : "—"}
+                        </span>
+                      </div>
+                      {fuelLatest?.measured_at && (
+                        <div className="text-xs text-muted-foreground">
+                          as of {new Date(fuelLatest.measured_at).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Capacity (Tabs)</span>
+                        <span className="font-medium">
+                          {aircraft?.tabs_fuel_gal != null ? `${Number(aircraft.tabs_fuel_gal).toFixed(1)} gal` : "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Capacity (Full)</span>
+                        <span className="font-medium">
+                          {aircraft?.usable_fuel_gal != null ? `${Number(aircraft.usable_fuel_gal).toFixed(1)} gal` : "—"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">% of Full</span>
+                        <span className="font-medium">
+                          {fuelLatest?.gallons_onboard != null && aircraft?.usable_fuel_gal
+                            ? `${Math.min(100, Math.round((Number(fuelLatest.gallons_onboard) / Number(aircraft.usable_fuel_gal)) * 100))}%`
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Fuel Type</span>
+                        <span className="font-medium">{aircraft?.fuel_type ?? "—"}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex flex-wrap gap-2 pt-2 border-t">
                   {membership && (
                     <Badge variant="secondary">
@@ -283,6 +350,7 @@ export default function OwnerDashboard() {
             )}
           </CardContent>
         </Card>
+
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {aircraft && user && (
@@ -303,19 +371,19 @@ export default function OwnerDashboard() {
           />
           <DocsCard />
         </div>
-          <div className="grid gap-4 md:grid-cols-4">
-  <OwnerKpis />
-</div>
         <CreditsOverview />
       </div>
     </Layout>
   );
 }
+
 // ============================================================
 // OWNER DASHBOARD – APPEND-ONLY FEATURE PACK (helpers + renders)
 // Safe to paste at the end of OwnerDashboard.tsx
 // ============================================================
 
+
+// ============================================================
 // ---------- Types ----------
 type OD_UUID = string;
 
@@ -445,7 +513,7 @@ export async function od_createReservation(p: {
     .from("reservations")
     .insert({
       owner_id: p.ownerId, aircraft_id: p.aircraftId,
-      start_at: p.startAt, end_at: p.endAt, destination: p.destination ?? null, status: "requested",
+      start_at: p.startAt, end_at: p.EndAt, destination: p.destination ?? null, status: "requested",
     })
     .select("*").maybeSingle();
   if (error) throw error;
@@ -479,8 +547,10 @@ export async function od_getConsumables(aircraftId: string): Promise<OD_Consumab
 }
 
 export async function od_requestTopOff(ownerId: string, aircraftId: string, type: "oil" | "o2" | "tks"): Promise<void> {
+  // Intentionally omitting optional fields (e.g., description) for top-off requests.
+  // These requests do not require a description or other optional fields by business logic.
   const { error } = await supabase.from("service_requests").insert({
-    user_id: ownerId, aircraft_id: aircraftId, service_type: `Top-Off: ${type.toUpperCase()}`, status: "pending",
+    user_id: ownerId, aircraft_id: aircraftId, service_type: `top-off: ${type}`, status: "pending",
   });
   if (error) throw error;
 }
@@ -576,10 +646,22 @@ export async function od_listSupportTickets(ownerId: string, limit = 5): Promise
   return data || [];
 }
 
+/**
+ * Creates a new squawk service request for the specified owner and aircraft.
+ * @param p - Parameters for the squawk request.
+ * @param p.ownerId - The ID of the owner creating the squawk.
+ * @param p.aircraftId - The ID of the aircraft for the squawk.
+ * @param p.item - The item or issue being reported.
+ * @param p.notes - Optional additional notes about the squawk.
+ * @returns A promise that resolves when the request is created.
+ */
 export async function od_createSquawk(p: { ownerId: string; aircraftId: string; item: string; notes?: string; }): Promise<void> {
   const { error } = await supabase.from("service_requests").insert({
-    user_id: p.ownerId, aircraft_id: p.aircraftId, service_type: "Squawk", status: "pending",
-    notes: p.notes ? `${p.item} — ${p.notes}` : p.item,
+    user_id: p.ownerId,
+    aircraft_id: p.aircraftId,
+    service_type: "squawk",
+    status: "pending",
+    description: p.notes ? `${p.item} — ${p.notes}` : p.item,
   });
   if (error) throw error;
 }
@@ -592,9 +674,6 @@ export async function od_createDocPlaceholder(p: { ownerId: string; aircraftId?:
 }
 
 // ---------- Minimal render helpers (optional) ----------
-// These are tiny UI snippets you can drop into your JSX later.
-// They depend only on your existing shadcn components already imported.
-
 export function renderOwnerReservations(rows: OD_Reservation[]) {
   return (
     <div className="space-y-2">

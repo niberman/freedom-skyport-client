@@ -27,15 +27,12 @@ export function QuickActions({ aircraftId, userId, aircraftData }: QuickActionsP
   const [openPrep, setOpenPrep] = useState(false);
   const [openService, setOpenService] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [fuelGrades] = useState<string[]>(["100LL", "Jet-A", "Jet-A+", "MOGAS"]);
 
   // Pre-Flight Concierge form
   const [prepForm, setPrepForm] = useState({
     aircraft_id: "",
     airport: "",
     requested_departure: "",
-    fuel_grade: "100LL",
-    fuel_quantity: "",
     o2_topoff: false,
     tks_topoff: false,
     gpu_required: false,
@@ -50,6 +47,52 @@ export function QuickActions({ aircraftId, userId, aircraftData }: QuickActionsP
     notes: "",
     requested_for: "",
   });
+
+  // Fuel actions (fixed fuel type per aircraft; user only selects quantities/targets)
+  const [orderTarget, setOrderTarget] =
+    useState<"ADD_QUANTITY" | "FILL_TO_TABS" | "FILL_TO_TABS_PLUS" | "FILL_TO_FULL">("FILL_TO_TABS");
+  const [addQty, setAddQty] = useState<number>(10);
+  const [tabsPlus, setTabsPlus] = useState<number>(10);
+  const [fuelQty, setFuelQty] = useState<number>(10);
+  const [snapshotGal, setSnapshotGal] = useState<number>(0);
+  const [fuelMsg, setFuelMsg] = useState<string>("");
+
+  async function createFuelOrder() {
+    setFuelMsg("");
+    const insert: any = { aircraft_id: aircraftId, target: orderTarget };
+    if (orderTarget === "ADD_QUANTITY") insert.add_quantity_gal = addQty;
+    if (orderTarget === "FILL_TO_TABS_PLUS") insert.tabs_plus_gal = tabsPlus;
+
+    const { data, error } = await supabase
+      .from("fuel_orders")
+      .insert(insert)
+      .select("computed_add_gal")
+      .maybeSingle();
+
+    if (error) setFuelMsg(error.message);
+    else setFuelMsg(`Order created. Computed add: ${data?.computed_add_gal ?? 0} gal`);
+  }
+
+  async function addFuelLog() {
+    setFuelMsg("");
+    const { error } = await supabase
+      .from("fuel_logs")
+      .insert({ aircraft_id: aircraftId, quantity: fuelQty, notes: "logged via Prepare Aircraft" });
+    if (error) setFuelMsg(error.message);
+    else setFuelMsg("Fuel log added.");
+  }
+
+  async function saveFuelSnapshot() {
+    setFuelMsg("");
+    const { error } = await supabase.rpc("set_fuel_snapshot", {
+      p_aircraft: aircraftId,
+      p_gal: snapshotGal,
+      p_method: "manual",
+      p_notes: null,
+    });
+    if (error) setFuelMsg(error.message);
+    else setFuelMsg("Snapshot saved.");
+  }
 
   // Set aircraft_id and airport when aircraft data loads
   useEffect(() => {
@@ -75,8 +118,6 @@ export function QuickActions({ aircraftId, userId, aircraftData }: QuickActionsP
         aircraft_id: prepForm.aircraft_id || null,
         airport: prepForm.airport?.toUpperCase() || "KAPA",
         requested_departure: prepForm.requested_departure || null,
-        fuel_grade: prepForm.fuel_grade || null,
-        fuel_quantity: prepForm.fuel_quantity || null,
         o2_topoff: prepForm.o2_topoff,
         tks_topoff: prepForm.tks_topoff,
         gpu_required: prepForm.gpu_required,
@@ -102,8 +143,6 @@ export function QuickActions({ aircraftId, userId, aircraftData }: QuickActionsP
         aircraft_id: aircraftData?.id || "",
         airport: aircraftData?.base_location?.toUpperCase() || "",
         requested_departure: "",
-        fuel_grade: fuelGrades[0] || "100LL",
-        fuel_quantity: "",
         o2_topoff: false,
         tks_topoff: false,
         gpu_required: false,
@@ -225,29 +264,70 @@ export function QuickActions({ aircraftId, userId, aircraftData }: QuickActionsP
                     required
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label>Fuel</Label>
+
+                  {/* Order targets */}
                   <div className="grid grid-cols-2 gap-2">
-                    <Select
-                      value={prepForm.fuel_grade}
-                      onValueChange={(v) => setPrepForm({ ...prepForm, fuel_grade: v })}
+                    <Button
+                      type="button"
+                      variant={orderTarget === "FILL_TO_TABS" ? "default" : "outline"}
+                      onClick={() => setOrderTarget("FILL_TO_TABS")}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Grade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {fuelGrades.map((g) => (
-                          <SelectItem key={g} value={g}>{g}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      placeholder="Gallons"
-                      inputMode="decimal"
-                      value={prepForm.fuel_quantity}
-                      onChange={(e) => setPrepForm({ ...prepForm, fuel_quantity: e.target.value })}
-                    />
+                      Fill to Tabs
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={orderTarget === "FILL_TO_FULL" ? "default" : "outline"}
+                      onClick={() => setOrderTarget("FILL_TO_FULL")}
+                    >
+                      Full Tanks
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={orderTarget === "ADD_QUANTITY" ? "default" : "outline"}
+                      onClick={() => setOrderTarget("ADD_QUANTITY")}
+                    >
+                      Add Quantity
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={orderTarget === "FILL_TO_TABS_PLUS" ? "default" : "outline"}
+                      onClick={() => setOrderTarget("FILL_TO_TABS_PLUS")}
+                    >
+                      Tabs + X
+                    </Button>
                   </div>
+
+                  {orderTarget === "ADD_QUANTITY" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="fuel_add_qty">Gallons to add</Label>
+                      <Input
+                        id="fuel_add_qty"
+                        type="number"
+                        min={1}
+                        value={addQty}
+                        onChange={(e) => setAddQty(Number(e.target.value))}
+                        placeholder="e.g., 15"
+                      />
+                    </div>
+                  )}
+
+                  {orderTarget === "FILL_TO_TABS_PLUS" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="fuel_tabs_plus">Tabs +</Label>
+                      <Input
+                        id="fuel_tabs_plus"
+                        type="number"
+                        min={0}
+                        value={tabsPlus}
+                        onChange={(e) => setTabsPlus(Number(e.target.value))}
+                        placeholder="e.g., 10"
+                      />
+                    </div>
+                  )}
+
+                  {fuelMsg && <p className="text-xs text-muted-foreground">{fuelMsg}</p>}
                 </div>
               </div>
 
