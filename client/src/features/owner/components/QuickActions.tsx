@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plane, Wrench } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabaseStub";
+import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface QuickActionsProps {

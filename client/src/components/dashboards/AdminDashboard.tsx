@@ -4,7 +4,7 @@ import { Plane, Users, Wrench, Settings } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseStub";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ServicesManagement } from "@/components/admin/ServicesManagement";
