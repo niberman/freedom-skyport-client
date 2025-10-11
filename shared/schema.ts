@@ -38,7 +38,7 @@ export const profiles = pgTable("profiles", {
 
 export const userRoles = pgTable("user_roles", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   role: appRoleEnum("role").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
@@ -58,7 +58,7 @@ export const aircraft = pgTable("aircraft", {
 
 export const activityLogs = pgTable("activity_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   aircraftId: uuid("aircraft_id"),
   actionType: text("action_type").notNull(),
   description: text("description"),
@@ -83,7 +83,7 @@ export const services = pgTable("services", {
 
 export const serviceRequests = pgTable("service_requests", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   aircraftId: uuid("aircraft_id").notNull(),
   serviceId: uuid("service_id"),
   serviceType: text("service_type").notNull(),
