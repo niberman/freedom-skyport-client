@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole, UserRole } from "@/hooks/useUserRole";
 
@@ -11,19 +11,19 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, loading: authLoading } = useAuth();
   const { data: role, isLoading: roleLoading } = useUserRole();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate("/auth");
+      setLocation("/auth");
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, setLocation]);
 
   useEffect(() => {
     if (!roleLoading && role && allowedRoles && !allowedRoles.includes(role)) {
-      navigate("/unauthorized");
+      setLocation("/unauthorized");
     }
-  }, [role, roleLoading, allowedRoles, navigate]);
+  }, [role, roleLoading, allowedRoles, setLocation]);
 
   if (authLoading || roleLoading) {
     return (

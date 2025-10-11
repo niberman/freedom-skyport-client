@@ -1,4 +1,4 @@
-import { useParams, Navigate, Link } from "react-router-dom";
+import { useRoute, useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Layout } from "@/components/Layout";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,9 +13,12 @@ import { QuickActions } from "@/features/owner/components/QuickActions";
 import { ServiceTimeline } from "@/features/owner/components/ServiceTimeline";
 import { BillingCard } from "@/features/owner/components/BillingCard";
 import { DocsCard } from "@/features/owner/components/DocsCard";
+import { useEffect } from "react";
 
 export default function OwnerDashboard() {
-  const { aircraftId } = useParams<{ aircraftId: string }>();
+  const [match, params] = useRoute("/owner/:aircraftId");
+  const aircraftId = params?.aircraftId;
+  const [, setLocation] = useLocation();
   const { user } = useAuth();
 
   const {
@@ -66,8 +69,14 @@ export default function OwnerDashboard() {
   }
 
   // Redirect if no access or aircraft not found
+  useEffect(() => {
+    if (aircraft.error || !aircraft.data) {
+      setLocation("/dashboard");
+    }
+  }, [aircraft.error, aircraft.data, setLocation]);
+  
   if (aircraft.error || !aircraft.data) {
-    return <Navigate to="/dashboard" replace />;
+    return null;
   }
 
   return (
