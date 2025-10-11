@@ -17,22 +17,12 @@ import { DocsCard } from "@/features/owner/components/DocsCard";
 export default function OwnerDashboard() {
   const { user } = useAuth();
   
-  const { data: aircraft } = useQuery({
-    queryKey: ["owner-aircraft", user?.id],
+  const { data: aircraftList } = useQuery({
+    queryKey: ["/api/aircraft", { ownerId: user?.id }],
     enabled: Boolean(user?.id),
-    queryFn: async () => {
-      if (!user?.id) {
-        return null;
-      }
-      const { data } = await supabase
-        .from("aircraft")
-        .select("*")
-        .eq("owner_id", user?.id)
-        .limit(1)
-        .maybeSingle();
-      return data;
-    }
   });
+  
+  const aircraft = aircraftList && aircraftList.length > 0 ? aircraftList[0] : null;
 
   const { data: nextFlight, refetch: refetchNextFlight } = useQuery({
     queryKey: ["next-flight", user?.id],
