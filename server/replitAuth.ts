@@ -9,9 +9,12 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+// Check if auth is configured
+const isAuthConfigured = !!(
+  process.env.REPLIT_DOMAINS &&
+  process.env.SESSION_SECRET &&
+  process.env.DATABASE_URL
+);
 
 const getOidcConfig = memoize(
   async () => {
@@ -68,6 +71,33 @@ async function upsertUser(
 }
 
 export async function setupAuth(app: Express) {
+  if (!isAuthConfigured) {
+    // ONLY allow auth bypass when explicitly in development mode
+    // All other cases (undefined, 'production', 'staging', etc.) must fail
+    if (process.env.NODE_ENV !== 'development') {
+      throw new Error("Authentication not configured - missing required env vars: REPLIT_DOMAINS, SESSION_SECRET, or DATABASE_URL");
+    }
+    
+    console.warn("[Auth] Running in DEVELOPMENT mode without Replit Auth configured");
+    console.warn("[Auth] Missing env vars: REPLIT_DOMAINS, SESSION_SECRET, or DATABASE_URL");
+    console.warn("[Auth] All routes will be accessible without authentication");
+    
+    // Setup minimal routes for development
+    app.get("/api/login", (_req, res) => {
+      res.status(503).json({ message: "Authentication not configured - development mode" });
+    });
+    
+    app.get("/api/callback", (_req, res) => {
+      res.status(503).json({ message: "Authentication not configured - development mode" });
+    });
+    
+    app.get("/api/logout", (_req, res) => {
+      res.status(503).json({ message: "Authentication not configured - development mode" });
+    });
+    
+    return;
+  }
+
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
@@ -129,6 +159,16 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  if (!isAuthConfigured) {
+    // ONLY allow bypass when explicitly in development mode
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(500).json({ message: "Authentication not configured" });
+    }
+    // In explicit dev mode without auth, allow all requests
+    console.warn("[Auth] isAuthenticated called but auth not configured - allowing request (development mode only)");
+    return next();
+  }
+
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
