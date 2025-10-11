@@ -47,7 +47,7 @@ export const aircraft = pgTable("aircraft", {
   id: uuid("id").primaryKey().defaultRandom(),
   tailNumber: text("tail_number").notNull().unique(),
   model: text("model").notNull(),
-  ownerId: uuid("owner_id"),
+  ownerId: varchar("owner_id"),
   baseLocation: text("base_location").default("KAPA"),
   status: text("status").default("active"),
   hobbsTime: numeric("hobbs_time"),
