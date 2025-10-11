@@ -1,10 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 
 export default function Unauthorized() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -19,7 +19,7 @@ export default function Unauthorized() {
           <p className="text-muted-foreground">
             You don't have permission to access this page.
           </p>
-          <Button onClick={() => navigate("/dashboard")}>
+          <Button onClick={() => setLocation("/dashboard")}>
             Return to Dashboard
           </Button>
         </CardContent>

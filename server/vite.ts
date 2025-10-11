@@ -26,24 +26,22 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   app.use(vite.middlewares);
-  app.use("*splat", async (req, res, next) => {
+  
+  const serveHTML = async (req: any, res: any, next: any) => {
     const url = req.originalUrl;
-
     try {
       const clientPath = path.resolve(__dirname, "..", "client", "index.html");
       let template = fs.readFileSync(clientPath, "utf-8");
       template = await vite.transformIndexHtml(url, template);
-
-      const { render } = await vite.ssrLoadModule("/client/src/main.tsx");
-      const appHtml = await render(url);
-      const html = template.replace(`<!--ssr-outlet-->`, appHtml);
-
-      res.status(200).set({ "Content-Type": "text/html" }).end(html);
+      res.status(200).set({ "Content-Type": "text/html" }).end(template);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
     }
-  });
+  };
+  
+  app.get("/", serveHTML);
+  app.get("/*splat", serveHTML);
 }
 
 export function serveStatic(app: Express) {
@@ -57,7 +55,10 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  app.use("*splat", (_req, res) => {
+  const serveIndexHTML = (_req: any, res: any) => {
     res.sendFile(path.resolve(distPath, "index.html"));
-  });
+  };
+  
+  app.get("/", serveIndexHTML);
+  app.get("/*splat", serveIndexHTML);
 }

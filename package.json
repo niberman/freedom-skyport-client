@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch -r tsconfig-paths/register server/index.ts",
+    "dev": "tsx watch --ignore 'vite.config.ts.timestamp-*' --ignore 'node_modules/**' --ignore 'dist/**' -r tsconfig-paths/register server/index.ts",
     "build": "vite build",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",

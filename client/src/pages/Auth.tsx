@@ -1,18 +1,18 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function Auth() {
   const { user, signIn } = useAuth();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      setLocation("/dashboard");
     }
-  }, [user, navigate]);
+  }, [user, setLocation]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">

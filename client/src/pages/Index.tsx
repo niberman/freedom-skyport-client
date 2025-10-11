@@ -1,8 +1,8 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Calendar, Wrench, Shield } from "lucide-react";
 const Index = () => {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-4 py-16">
@@ -19,10 +19,10 @@ const Index = () => {
             Premium aircraft management and flight instruction across Colorado
           </p>
           <div className="flex gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate("/auth")}>
+            <Button size="lg" onClick={() => setLocation("/auth")}>
               Get Started
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/auth")}>
+            <Button size="lg" variant="outline" onClick={() => setLocation("/auth")}>
               Sign In
             </Button>
           </div>

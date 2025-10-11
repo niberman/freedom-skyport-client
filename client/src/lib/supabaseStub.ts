@@ -3,76 +3,40 @@
 
 const createAsyncResult = (data: any = null) => Promise.resolve({ data, error: null });
 
+const createChainableQuery = () => {
+  const baseResult = {
+    data: [],
+    error: null,
+    count: 0,
+  };
+
+  const chainMethods: any = {
+    ...baseResult,
+    eq: (...args: any[]) => createChainableQuery(),
+    order: (...args: any[]) => createChainableQuery(),
+    limit: (...args: any[]) => createChainableQuery(),
+    neq: (...args: any[]) => createChainableQuery(),
+    gte: (...args: any[]) => createChainableQuery(),
+    not: (...args: any[]) => createChainableQuery(),
+    maybeSingle: () => createAsyncResult(null),
+    single: () => createAsyncResult(null),
+    then: (resolve: any) => resolve(baseResult),
+  };
+
+  return chainMethods;
+};
+
+const createChannel = (): any => {
+  const channelMethods = {
+    on: (...args: any[]) => channelMethods,
+    subscribe: (...args: any[]) => {},
+  };
+  return channelMethods;
+};
+
 export const supabase = {
   from: (table: string) => ({
-    select: (...args: any[]) => {
-      const result = {
-        data: [],
-        error: null,
-        count: 0,
-      };
-      
-      return {
-        ...result,
-        eq: (...args: any[]) => ({
-          ...result,
-          order: (...args: any[]) => ({
-            ...result,
-            limit: (...args: any[]) => ({
-              ...result,
-              maybeSingle: () => createAsyncResult(null),
-              single: () => createAsyncResult(null),
-            }),
-            maybeSingle: () => createAsyncResult(null),
-            single: () => createAsyncResult(null),
-          }),
-          limit: (...args: any[]) => createAsyncResult([]),
-          maybeSingle: () => createAsyncResult(null),
-          single: () => createAsyncResult(null),
-          neq: (...args: any[]) => ({ ...result }),
-          gte: (...args: any[]) => ({
-            order: (...args: any[]) => ({
-              limit: (...args: any[]) => ({
-                maybeSingle: () => createAsyncResult(null),
-              }),
-            }),
-          }),
-          not: (...args: any[]) => ({
-            gte: (...args: any[]) => ({
-              order: (...args: any[]) => ({
-                limit: (...args: any[]) => ({
-                  maybeSingle: () => createAsyncResult(null),
-                }),
-              }),
-            }),
-          }),
-        }),
-        order: (...args: any[]) => ({
-          ...result,
-          limit: (...args: any[]) => ({
-            ...result,
-            maybeSingle: () => createAsyncResult(null),
-          }),
-        }),
-        neq: (...args: any[]) => ({ ...result }),
-        not: (...args: any[]) => ({
-          gte: (...args: any[]) => ({
-            order: (...args: any[]) => ({
-              limit: (...args: any[]) => ({
-                maybeSingle: () => createAsyncResult(null),
-              }),
-            }),
-          }),
-        }),
-        gte: (...args: any[]) => ({
-          order: (...args: any[]) => ({
-            limit: (...args: any[]) => ({
-              maybeSingle: () => createAsyncResult(null),
-            }),
-          }),
-        }),
-      };
-    },
+    select: (...args: any[]) => createChainableQuery(),
     insert: (...args: any[]) => createAsyncResult(null),
     update: (...args: any[]) => ({
       eq: (...args: any[]) => createAsyncResult(null),
@@ -81,10 +45,6 @@ export const supabase = {
       eq: (...args: any[]) => createAsyncResult(null),
     }),
   }),
-  channel: (...args: any[]) => ({
-    on: (...args: any[]) => ({
-      subscribe: (...args: any[]) => {},
-    }),
-  }),
+  channel: (...args: any[]) => createChannel(),
   removeChannel: (...args: any[]) => {},
 };

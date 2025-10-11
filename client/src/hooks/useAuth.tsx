@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 
 interface User {
   id: string;
@@ -21,7 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     // Check for current user session
