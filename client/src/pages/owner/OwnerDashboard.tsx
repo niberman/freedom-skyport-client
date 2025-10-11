@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseStub";
 import { useOwnerAircraft } from "@/features/owner/hooks/useOwnerAircraft";
 import { AircraftHeader } from "@/features/owner/components/AircraftHeader";
 
