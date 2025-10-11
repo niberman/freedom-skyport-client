@@ -6,7 +6,11 @@ import {
   insertAircraftSchema, 
   insertServiceRequestSchema,
   insertServiceSchema,
-  insertMembershipSchema 
+  insertMembershipSchema,
+  type InsertAircraft,
+  type InsertServiceRequest,
+  type InsertService,
+  type InsertMembership
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -77,7 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!result.success) {
       return res.status(400).json({ error: result.error });
     }
-    const aircraft = await storage.createAircraft(result.data);
+    const aircraft = await storage.createAircraft(result.data as unknown as InsertAircraft);
     res.status(201).json(aircraft);
   });
 
@@ -125,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!result.success) {
       return res.status(400).json({ error: result.error });
     }
-    const service = await storage.createService(result.data);
+    const service = await storage.createService(result.data as unknown as InsertService);
     res.status(201).json(service);
   });
 
@@ -165,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!result.success) {
       return res.status(400).json({ error: result.error });
     }
-    const request = await storage.createServiceRequest(result.data);
+    const request = await storage.createServiceRequest(result.data as unknown as InsertServiceRequest);
     res.status(201).json(request);
   });
 
@@ -225,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!result.success) {
       return res.status(400).json({ error: result.error });
     }
-    const membership = await storage.createMembership(result.data);
+    const membership = await storage.createMembership(result.data as unknown as InsertMembership);
     res.status(201).json(membership);
   });
 

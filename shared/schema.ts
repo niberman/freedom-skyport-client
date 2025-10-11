@@ -176,29 +176,37 @@ export const invoiceLines = pgTable("invoice_lines", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
-// Insert schemas
-export const insertProfileSchema = createInsertSchema(profiles).omit({ createdAt: true, updatedAt: true });
-export const insertAircraftSchema = createInsertSchema(aircraft).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertServiceRequestSchema = createInsertSchema(serviceRequests).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertMembershipSchema = createInsertSchema(memberships).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertInvoiceLineSchema = createInsertSchema(invoiceLines).omit({ id: true, createdAt: true });
+// Insert schemas - create base schemas then pick required fields
+const profileSchema = createInsertSchema(profiles);
+const aircraftSchemaBase = createInsertSchema(aircraft);
+const serviceRequestSchemaBase = createInsertSchema(serviceRequests);
+const serviceSchemaBase = createInsertSchema(services);
+const membershipSchemaBase = createInsertSchema(memberships);
+const invoiceSchemaBase = createInsertSchema(invoices);
+const invoiceLineSchemaBase = createInsertSchema(invoiceLines);
 
-// Types
-export type InsertProfile = z.infer<typeof insertProfileSchema>;
+export const insertProfileSchema = profileSchema.pick({ id: true, email: true, fullName: true, phone: true });
+export const insertAircraftSchema = aircraftSchemaBase.pick({ tailNumber: true, model: true, ownerId: true, baseLocation: true, status: true, hobbsTime: true, tachTime: true });
+export const insertServiceRequestSchema = serviceRequestSchemaBase.pick({ userId: true, aircraftId: true, serviceId: true, serviceType: true, description: true, priority: true, status: true, airport: true, requestedDeparture: true, fuelGrade: true, fuelQuantity: true, o2Topoff: true, tksTopoff: true, gpuRequired: true, hangarPullout: true, cabinProvisioning: true, isExtraCharge: true, creditsUsed: true });
+export const insertServiceSchema = serviceSchemaBase.pick({ name: true, description: true, category: true, isActive: true, creditsRequired: true, canRollover: true, creditsPerPeriod: true, baseCreditsLowActivity: true, baseCreditsHighActivity: true });
+export const insertMembershipSchema = membershipSchemaBase.pick({ ownerId: true, tier: true, active: true, tierId: true, startDate: true, endDate: true });
+export const insertInvoiceSchema = invoiceSchemaBase.pick({ aircraftId: true, ownerId: true, periodStart: true, periodEnd: true, totalCents: true, status: true, hostedInvoiceUrl: true });
+export const insertInvoiceLineSchema = invoiceLineSchemaBase.pick({ invoiceId: true, description: true, quantity: true, unitCents: true });
+
+// Types - using Drizzle's type inference
+export type InsertProfile = typeof profiles.$inferInsert;
 export type Profile = typeof profiles.$inferSelect;
 
-export type InsertAircraft = z.infer<typeof insertAircraftSchema>;
+export type InsertAircraft = typeof aircraft.$inferInsert;
 export type Aircraft = typeof aircraft.$inferSelect;
 
-export type InsertServiceRequest = z.infer<typeof insertServiceRequestSchema>;
+export type InsertServiceRequest = typeof serviceRequests.$inferInsert;
 export type ServiceRequest = typeof serviceRequests.$inferSelect;
 
-export type InsertService = z.infer<typeof insertServiceSchema>;
+export type InsertService = typeof services.$inferInsert;
 export type Service = typeof services.$inferSelect;
 
-export type InsertMembership = z.infer<typeof insertMembershipSchema>;
+export type InsertMembership = typeof memberships.$inferInsert;
 export type Membership = typeof memberships.$inferSelect;
 
 export type Invoice = typeof invoices.$inferSelect;
