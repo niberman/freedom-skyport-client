@@ -2,7 +2,6 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Button } from "@/components/ui/button";
 import OwnerDashboard from "@/components/dashboards/OwnerDashboard";
-import InstructorDashboard from "@/components/dashboards/InstructorDashboard";
 import AdminDashboard from "@/components/dashboards/AdminDashboard";
 
 export default function Dashboard() {
@@ -22,7 +21,6 @@ export default function Dashboard() {
   return (
     <ProtectedRoute>
       {role === "owner" && <OwnerDashboard />}
-      {role === "instructor" && <InstructorDashboard />}
       {role === "admin" && <AdminDashboard />}
       {!role && (
         <div className="min-h-screen flex items-center justify-center">
