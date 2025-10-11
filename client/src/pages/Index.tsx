@@ -1,8 +1,35 @@
 import { useLocation } from "wouter";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, Wrench, Shield } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+
 const Index = () => {
   const [, setLocation] = useLocation();
+  const { user, loading: authLoading } = useAuth();
+  const { data: role, isLoading: roleLoading } = useUserRole();
+
+  useEffect(() => {
+    if (!authLoading && !roleLoading && user && role) {
+      // Redirect authenticated users with roles to their dashboard
+      if (role === "owner" || role === "admin") {
+        setLocation("/dashboard");
+      }
+    }
+  }, [user, role, authLoading, roleLoading, setLocation]);
+
+  if (authLoading || roleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-4 py-16">

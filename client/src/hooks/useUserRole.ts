@@ -7,15 +7,15 @@ export function useUserRole() {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["/api/users", user?.id, "roles"],
+    queryKey: [`/api/users/${user?.id}/roles`],
     enabled: !!user?.id,
-    select: (data: { role: UserRole }[]) => {
-      // Handle multiple roles - prioritize admin > owner
+    select: (data: string[]) => {
+      // API returns array of role strings like ["owner"] or ["admin"]
       if (!data || data.length === 0) return null;
       
-      const roles = data.map(r => r.role);
-      if (roles.includes("admin")) return "admin";
-      if (roles.includes("owner")) return "owner";
+      // Prioritize admin > owner if user has multiple roles
+      if (data.includes("admin")) return "admin" as UserRole;
+      if (data.includes("owner")) return "owner" as UserRole;
       
       return null;
     },
